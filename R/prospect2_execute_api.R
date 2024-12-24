@@ -50,11 +50,11 @@ p2_verb_thing <- function(existing_things, new_things = NULL,
 
   lookup <- p2_query_api(modify_url(api_url,
                                     path = paste0("api/3/",things)))[[things]]
-
+  
   lookup[,name := unlist(get(.name))]
 
-  jobs <- setDT(lookup)[existing_things,.(id, name,
-                                          object = new_things), on="name"]
+  todo <- data.table(name = existing_things, object = new_things)
+  jobs <- lookup[todo,.(id, name, object), on="name"]
 
   if(any(sapply(jobs$id,is.null))) {
     rlang::warn(paste0("Cannot find listed ",things,", skipping:"),

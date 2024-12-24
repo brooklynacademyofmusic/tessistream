@@ -67,6 +67,23 @@ test_that("p2_verb_thing gets the thing id and warns if it can't find it", {
                 verb = "PUT", thing = "tag"),"Cannot find.+five")
 })
 
+test_that("p2_verb_thing handles multiple things with the same name", {
+  tags$tags$tag = "one"
+  p2_query_api <- mock(tags, cycle = TRUE)
+  stub(p2_verb_thing, "p2_query_api", p2_query_api)
+  
+  p2_execute_api <- mock(TRUE, cycle = TRUE)
+  stub(p2_verb_thing, "p2_execute_api", p2_execute_api)
+  
+  expect_warning(
+    p2_verb_thing(c("one","two"),
+                  verb = "DELETE", thing = "tag"),
+    "Cannot find.+two")
+  
+  expect_length(mock_args(p2_execute_api),6)
+
+})
+
 test_that("p2_verb_thing calls p2_execute_api", {
   p2_query_api <- mock(tags, cycle = TRUE)
   stub(p2_verb_thing, "p2_query_api", p2_query_api)
