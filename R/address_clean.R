@@ -132,7 +132,7 @@ street_cleaner <- function(list_no) {
 
   sync_cache("address_stream.sqlite","stream")
   address_stream <- read_cache("address_stream_full","stream") %>%
-    filter(event_type=="Current" & primary_ind=="Y" & customer_no %in% list$customer_no) %>% collect %>%
+    filter(event_subtype=="Current" & primary_ind=="Y" & customer_no %in% list$customer_no) %>% collect %>%
     setDT %>% setkey(customer_no,timestamp)
 
   address_stream <- address_stream[,last(.SD), by = c("customer_no")]
