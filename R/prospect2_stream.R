@@ -273,7 +273,7 @@ p2_unnest <- function(data, colname) {
 #'
 #' Incrementally update all of the p2 data in the local sqlite database
 #'
-#' @importFrom dplyr tbl summarize collect filter full_join select group_by transmute
+#' @importFrom dplyr tbl summarize collect filter full_join select group_by transmute tally
 #' @importFrom lubridate today dmonths
 #' @export
 p2_update <- function() {
@@ -303,15 +303,14 @@ p2_update <- function() {
 
   # then load new log entries greater than the current max id
   for (table in c("logs", "linkData", "mppLinkData")) {
-    max_id <- if (DBI::dbExistsTable(tessistream$p2_db, table)) {
+    len <- if (DBI::dbExistsTable(tessistream$p2_db, table)) {
       tbl(tessistream$p2_db, table) %>%
-        summarize(max(as.integer(id), na.rm = TRUE)) %>%
-        collect() %>%
-        as.integer()
+        tally %>% collect
+        as.integer
     } else {
       0
     }
-    p2_load(table, offset = max_id)
+    p2_load(table, offset = len)
   }
 }
 
