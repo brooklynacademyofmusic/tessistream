@@ -305,7 +305,7 @@ p2_update <- function() {
   for (table in c("logs", "linkData", "mppLinkData")) {
     len <- if (DBI::dbExistsTable(tessistream$p2_db, table)) {
       tbl(tessistream$p2_db, table) %>%
-        tally %>% collect
+        tally %>% collect %>%
         as.integer
     } else {
       0
