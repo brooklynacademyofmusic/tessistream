@@ -1,6 +1,5 @@
-if (interactive()) {
-  require("devtools")
-}
+if (file.exists("~/.Rprofile"))
+  source("~/.Rprofile")  
 
 # if rprojroot package is available
 if (system.file(package = "rprojroot") != "") {
