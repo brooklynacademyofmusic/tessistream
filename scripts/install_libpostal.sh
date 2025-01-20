@@ -16,10 +16,12 @@ install_nix() {
 
   git clone https://github.com/openvenues/libpostal
   cd libpostal
-  ./bootstrap.sh
-  ./configure --datadir="$2"
-  make -j4
-  sudo make install)
+  if [ ! -f "src/address_parser" ]; then 
+    ./bootstrap.sh
+    ./configure --datadir="$2"
+    make -j4
+    sudo make install;
+  fi)
 
   # On Linux it's probably a good idea to run
   sudo ldconfig
@@ -35,10 +37,12 @@ install_windows() {
   git clone https://github.com/openvenues/libpostal
   cd libpostal
   cp -rf windows/* ./
-  ./bootstrap.sh
-  ./configure --datadir="$2"
-  make -j4
-  make install)
+  if [ ! -f "src/address_parser" ]; then 
+    ./bootstrap.sh
+    ./configure --datadir="$2"
+    make -j4
+    make install
+  fi)
 }
 
 if [ $# -lt 2 ]; then
