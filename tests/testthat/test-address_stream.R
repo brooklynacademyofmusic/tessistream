@@ -293,23 +293,29 @@ address_stream <- data.table(street1 = paste(1:100, "example lane"), something =
 address_result <- data.table::copy(address_stream)[, processed := strsplit(street1, " ") %>% purrr::map_chr(1)]
 
 sqlite_file <- tessilake::cache_primary_path("address_stream.sqlite", "stream")
-db <- NULL
+
+local_db <- function(sqlite_file) {
+  db <- DBI::dbConnect(RSQLite::SQLite(), sqlite_file)
+  withr::defer(DBI::dbDisconnect(db),parent.frame())
+  db
+}
 
 test_that("address_cache handles cache non-existence and writes a cache file containing only address_processed cols", {
   expect_false(file.exists(sqlite_file))
   address_processor <- mock(address_result[1:25])
   address_cache(address_stream[1:25], "address_cache", address_processor)
   expect_true(file.exists(sqlite_file))
-  db <<- DBI::dbConnect(RSQLite::SQLite(), sqlite_file)
+  db <- local_db(sqlite_file)
   expect_named(DBI::dbReadTable(db, "address_cache"), c(address_cols, "something", "processed"), ignore.order = TRUE)
 })
 
 test_that("address_cache adds an index to the table", {
-  db <<- DBI::dbConnect(RSQLite::SQLite(), sqlite_file)
+  db <- local_db(sqlite_file)
   expect_equal(nrow(DBI::dbGetQuery(db, "select * from sqlite_master where type = 'index'")),1)
 })
 
 test_that("address_cache handles zero-row input gracefully", {
+  db <- local_db(sqlite_file)
   address_processor <- mock(address_result[0])
   address_cache(address_stream[0], "address_cache", address_processor)
   expect_equal(nrow(DBI::dbReadTable(db, "address_cache")), 25)
@@ -329,13 +335,14 @@ test_that("address_cache handles fully-cached requests gracefully", {
 })
 
 test_that("address_cache updates the the cache file after cache misses", {
+  db <- local_db(sqlite_file)
   expect_equal(nrow(DBI::dbReadTable(db, "address_cache")), 50)
   expect_named(DBI::dbReadTable(db, "address_cache"), c(address_cols, "something", "processed"), ignore.order = TRUE)
 })
 
 test_that("address_cache incremental runs match address_cache full runs", {
   address_processor <- function(.) { address_result[.[,..address_cols],on=address_cols]}
-
+  db <- local_db(sqlite_file)
   incremental <- DBI::dbReadTable(db, "address_cache") %>%
     collect() %>%
     setDT()
@@ -345,6 +352,7 @@ test_that("address_cache incremental runs match address_cache full runs", {
 })
 
 test_that("address_cache updates the the cache file when there are new columns to append", {
+  db <- local_db(sqlite_file)
   address_processor <- mock(address_stream[51:100, .(street1, new_int_feature = 1000, new_char_feature = "coolness")])
   address_cache(address_stream, "address_cache", address_processor)
   expect_equal(nrow(mock_args(address_processor)[[1]][[1]]), 50)
@@ -355,6 +363,7 @@ test_that("address_cache updates the the cache file when there are new columns t
 })
 
 test_that("address_cache saves only unique addresses", {
+  db <- local_db(sqlite_file)
   address_processor <- function(.) { address_result[.,on=address_cols]}
   address_stream <- data.table(street1 = paste(c(5000,5000), "example lane"), something = "extra") %>% rbind(address_stream[0], fill = TRUE)
   address_cache(address_stream, "address_cache", address_processor)
@@ -362,6 +371,7 @@ test_that("address_cache saves only unique addresses", {
 })
 
 test_that("address_cache returns data appended to input", {
+  db <- local_db(sqlite_file)
   address_processor <- function(.) { address_result[.,on=address_cols]}
   address_stream <- data.table(street1 = paste(c(1,5,1,5), "example lane"), something = "extra") %>% rbind(address_stream[0], fill = TRUE)
   res <- address_cache(address_stream, "address_cache", address_processor) %>% select(street1,processed)
@@ -406,6 +416,7 @@ test_that("address_cache_chunked returns the same results as address_cache for a
   address_stream <- rbind(address_stream, address_stream)
   address_processor <- mock(rbind(address_result, address_result))
   future::plan("multisession")
+  withr::defer(future::plan("sequential"))
 
   expect_equal(address_cache(address_stream, "address_cache", address_processor),
                address_cache_chunked(address_stream, "address_cache", address_processor, n = 1, parallel = FALSE))
@@ -421,7 +432,6 @@ test_that("address_cache_chunked returns the same results as address_cache for a
   expect_equal(address_cache(address_stream, "address_cache", address_processor),
                address_cache_chunked(address_stream, "address_cache", address_processor, n = 100, parallel = TRUE))
 
-  future::plan("sequential")
 })
 
 
@@ -438,8 +448,7 @@ address_stream_parsed <- data.table(
   postcode = "11217"
 )
 
-DBI::dbDisconnect(db)
-file.remove(tessilake::cache_primary_path("address_stream.sqlite", "stream"))
+file.remove(sqlite_file)
 
 test_that("address_parse handles cache non-existence and writes a cache file containing only address_cols and libpostal cols", {
   address_stream <- data.table(
@@ -457,8 +466,8 @@ test_that("address_parse handles cache non-existence and writes a cache file con
   expect_false(file.exists(sqlite_file))
   address_parse(address_stream)
   expect_true(file.exists(sqlite_file))
-  db <<- DBI::dbConnect(RSQLite::SQLite(), sqlite_file)
-
+  db <- local_db(sqlite_file)
+  
   expect_named(DBI::dbReadTable(db, "address_parse"),
     as.character(c(address_cols, paste0("libpostal.", colnames(address_stream_parsed)))),
     ignore.order = TRUE
@@ -491,6 +500,7 @@ test_that("address_parse only send cache misses to address_parse_libpostal", {
 })
 
 test_that("address_parse updates the the cache file after cache misses", {
+  db <- local_db(sqlite_file)  
   expect_equal(nrow(DBI::dbReadTable(db, "address_parse")), 64)
   expect_named(DBI::dbReadTable(db, "address_parse"),
     as.character(c(address_cols, paste0("libpostal.", colnames(address_stream_parsed)))),
@@ -508,7 +518,6 @@ test_that("address_parse incremental runs match address_parse full runs", {
     country = ""
   )
 
-  DBI::dbDisconnect(db)
   file.remove(sqlite_file)
 
   stub(address_parse_libpostal, "address_exec_libpostal", address_stream_parsed[, house_number])
