@@ -37,7 +37,7 @@ install_windows() {
   git clone https://github.com/openvenues/libpostal
   cd libpostal
   cp -rf windows/* ./
-  if [ ! -f "src/address_parser" ]; then 
+  if [ ! -f "src/address_parser.exe" ]; then 
     ./bootstrap.sh
     ./configure --datadir="$2"
     make -j4
