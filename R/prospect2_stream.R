@@ -391,13 +391,16 @@ p2_email_map <- function() {
     customer_no = i.customer_no
   ), on = "id"]
 
-  contacts <- contacts[!is.na(customer_no) & !is.na(email)]
+  # all P2 contacts with either email or customer #
+  contacts <- contacts[!is.na(customer_no) | !is.na(email)]
 
-  email_map <- rbind(contacts, emails[contacts$email,,on="email"], fill = T)
+  # all P2 contacts + all tessi contacts with emails in P2
+  email_map <- rbind(contacts, 
+                     emails[contacts$email,,on="email"][!is.na(customer_no)], 
+                     fill = T)
 
-  # fill in subscriber id
-  email_map <- email_map[,id:=max(id,na.rm=T),by="email"] %>%
-    .[!is.na(customer_no) & !is.na(email)]
+  # fill in subscriber id for newly added tessi emails
+  email_map <- email_map[,id:=first(id),by="email"]
 
   # map customer_no -> group_customer_no
   email_map[tessilake::tessi_customer_no_map() %>%

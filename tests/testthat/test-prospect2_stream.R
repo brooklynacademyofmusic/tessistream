@@ -472,15 +472,47 @@ test_that("p2_email_map matches up Tessi customer numbers and emails from within
   stub(p2_email_map,"tessilake::tessi_customer_no_map",tessi_customer_no_map)
   stub(p2_email_map,"tbl",mock(contacts,customer_nos, cycle = T))
 
-  mapping <- rbind(
+  expected_mapping <- rbind(
     data.table(id=seq(50),customer_no=seq(100)), # from Tessi
-    data.table(id=seq(51,100),customer_no=seq(50)) # from P2
+    data.table(id=seq(51,100),customer_no=seq(50)) # from P2 only
   ) %>% .[,`:=`(group_customer_no=customer_no+1000,
+                # keeps the email from P2 rather than Tessi
                 email=paste0(id,"@gmail.com"))]
 
-  expect_mapequal(p2_email_map() %>% setorderv(c("id","customer_no")),mapping %>% setorderv(c("id","customer_no")))
-  expect_false(any(is.na(p2_email_map()$group_customer_no)))
-  expect_false(any(is.na(p2_email_map()$customer_no)))
+  expect_mapequal(p2_email_map() %>% setorderv(c("id","customer_no")),expected_mapping %>% setorderv(c("id","customer_no")))
+  expect_equal(p2_email_map()[is.na(group_customer_no),.N],0)
+  expect_equal(p2_email_map()[is.na(customer_no),.N],0)
+})
+
+test_that("p2_email_map includes P2 emails that don't exist in Tessitura",{
+  withr::local_package("dplyr")
+  
+  # duplicated emails in Tessi - 1@gmail.com -> customer 1,51
+  tessi <- data.frame(customer_no=seq(100),address=paste0(seq(50),"@gmail.com"),primary_ind='Y')
+  tessi_customer_no_map <- data.frame(customer_no=seq(100),group_customer_no=seq(100)+1000)
+  
+  # duplicated customer numbers in P2 - customer 1 -> 1@gmail.com, 51@gmail.com
+  contacts <- data.frame(id=seq(100),email=paste0(seq(100),"@gmail.com"))
+  customer_nos <- data.frame(contact=seq(100),value=seq(50))
+  
+  # non-Tessi customers
+  contacts <- rbind(contacts,
+                    data.frame(id=seq(101,200),email=paste0(seq(101,200),"@gmail.com")))
+  
+  stub(p2_email_map,"tessilake::read_tessi",tessi)
+  stub(p2_email_map,"tessilake::tessi_customer_no_map",tessi_customer_no_map)
+  stub(p2_email_map,"tbl",mock(contacts,customer_nos, cycle = T))
+  
+  expected_mapping <- rbind(
+    data.table(id=seq(50),customer_no=seq(100)), # from Tessi
+    data.table(id=seq(51,200),customer_no=c(seq(50),rep(NA,100))) # from P2
+  ) %>% .[,`:=`(group_customer_no=customer_no+1000,
+                # keeps the email from P2 rather than Tessi
+                email=paste0(id,"@gmail.com"))]
+  
+  expect_mapequal(p2_email_map() %>% setorderv(c("id","customer_no")),expected_mapping %>% setorderv(c("id","customer_no")))
+  expect_equal(p2_email_map()[is.na(group_customer_no),.N],100)
+  expect_equal(p2_email_map()[is.na(customer_no),.N],100)
 })
 
 p2_db_close()
