@@ -108,7 +108,7 @@ test_that("stream updates the existing dataset", {
   stub(stream, "sync_cache", NULL)
   stub(stream, "cache_exists_any", TRUE)
 
-  suppressMessages(stream(streams = c("stream_a","stream_b"), chunk_size = n))
+  suppressMessages(stream(streams = c("stream_a","stream_b"), chunk_size = n, since = as_datetime("2022-08-31")))
   
   stream <- rbindlist(list(collect(stream_a),collect(stream_b)),fill=T)
   stream_cache <- stream_cache %>% collect %>% setDT

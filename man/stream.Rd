@@ -14,6 +14,7 @@ stream(
   window_match = "^(email|ticket|contribution|membership|ticket|address).+(count|amt)$",
   chunk_size = 1e+07,
   rebuild = FALSE,
+  since = now() - dyears(),
   incremental = !rebuild,
   windows = lapply(c(1, 7, 30, 90, 365), lubridate::period, units = "day"),
   ...
@@ -49,6 +50,8 @@ stream_window_features(
 
 \item{rebuild}{\href{1}{logical} whether or not to rebuild the whole dataset (\code{TRUE}) or just append to the end of it (\code{FALSE})}
 
+\item{since}{\link{POSIXct} only the data with timestamps greater than or equal to \code{since} will be written}
+
 \item{incremental}{\href{1}{logical} whether or not to update the cache incrementally. Can require huge amounts of memory (approximately double the total dataset size to be appended).}
 
 \item{windows}{\link[lubridate:period]{lubridate::period} vector that determines the offsets used when constructing the windowed features.}
@@ -60,8 +63,6 @@ stream_window_features(
 \item{fill_cols}{\link{character} columns to fill down}
 
 \item{window_cols}{\link{character} columns to window}
-
-\item{since}{\link{POSIXct} only the data with timestamps greater than or equal to \code{since} will be written}
 
 \item{by}{\href{1}{character} column name to group by for filling down and windowing}
 }

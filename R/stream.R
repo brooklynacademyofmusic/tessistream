@@ -10,6 +10,7 @@
 #' @param streams [character] vector of streams to combine
 #' @param fill_match [character](1) regular expression to use when matching columns to fill down 
 #' @param window_match [character](1) regular expression to use when matching columns to window
+#' @param since [POSIXct](1) date after which to build the stream
 #' @param rebuild [logical](1) whether or not to rebuild the whole dataset (`TRUE`) or just append to the end of it (`FALSE`)
 #' @param incremental [logical](1) whether or not to update the cache incrementally. Can require huge amounts of memory (approximately double the total dataset size to be appended).
 #' @param chunk_size [integer](1) number of rows to include in each partition of the dataset
@@ -17,7 +18,7 @@
 #' @importFrom dplyr collect filter transmute
 #' @importFrom tessilake read_cache cache_exists_any write_cache sync_cache
 #' @importFrom checkmate assert_character assert_logical assert_list
-#' @importFrom lubridate as_datetime
+#' @importFrom lubridate as_datetime now dyears
 #' @param ... not used
 #'
 #' @return stream dataset as an [arrow::Table]
@@ -28,6 +29,7 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
                    window_match = "^(email|ticket|contribution|membership|ticket|address).+(count|amt)$",
                    chunk_size = 10e6,
                    rebuild = FALSE, 
+                   since = now() - dyears(),
                    incremental = !rebuild, 
                    windows = lapply(c(1,7,30,90,365),
                                     lubridate::period,
@@ -53,10 +55,11 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
   stream_max_rowid <- 0
   if(cache_exists_any("stream","stream") & !rebuild) {
     stream <- read_cache("stream","stream")
-    stream_max_date <- stream %>% summarise(max(timestamp)) %>% collect() %>% .[[1]]
+    stream_max_date <- since
     stream_max_rowid <- stream %>% summarise(max(rowid)) %>% collect() %>% .[[1]]
   }
     
+  
   timestamps <- lapply(streams, \(stream) transmute(stream, timestamp = as_datetime(timestamp)) %>% collect) %>% 
     rbindlist %>% setkey(timestamp) %>% .[,partition := rep(seq_len(.N), each = chunk_size, 
                                                             length.out = .N)]
