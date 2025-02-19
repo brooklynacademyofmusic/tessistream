@@ -13,5 +13,5 @@ progressr_(n)
 function to be called on each of n loops
 }
 \description{
-Create a \link[progressr:progression]{progressr::progression} (or a dummy function)
+Helper function to create a \link[progressr:progression]{progressr::progression} (or a dummy function) if progressr doesn't exist
 }
