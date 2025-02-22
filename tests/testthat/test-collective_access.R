@@ -89,3 +89,6 @@ test_that("collective_access_c returns a vector of the same type as the input", 
   expect_equal(collective_access_c(a,b),c(seq(100),Sys.Date()))
 })
 
+# collective_access_stream ------------------------------------------------
+
+
