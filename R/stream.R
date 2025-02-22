@@ -56,7 +56,7 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
   if(cache_exists_any("stream","stream") & !rebuild) {
     stream <- read_cache("stream","stream")
     stream_max_date <- since
-    stream_max_rowid <- stream %>% summarise(max(rowid)) %>% collect() %>% .[[1]]
+    stream_max_rowid <- stream %>% filter(timestamp < stream_max_date) %>% summarise(max(rowid)) %>% collect() %>% .[[1]]
   }
     
   

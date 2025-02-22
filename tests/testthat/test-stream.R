@@ -29,6 +29,7 @@ test_that("stream combines multiple streams into one", {
   
 })
 
+
 test_that("stream works with mixed POSIXct/Date timestamps", {
   n <- 100000
   stream_a <- arrow::arrow_table(group_customer_no = sample(seq(n/100),n,replace=T),
@@ -116,11 +117,52 @@ test_that("stream updates the existing dataset", {
   expect_equal(mock_args(stream_chunk_write)[[1]][[1]][,.N]+
                mock_args(stream_chunk_write)[[2]][[1]][,.N],
                stream[timestamp > max(stream_cache$timestamp),.N])
-  expect_equal(anyDuplicated(
+  expect_equal(anyDuplicated(c(
     stream_cache[,rowid],
     mock_args(stream_chunk_write)[[1]][[1]][,rowid],
-    mock_args(stream_chunk_write)[[2]][[1]][,rowid]),
+    mock_args(stream_chunk_write)[[2]][[1]][,rowid])),
     0)
+})
+
+test_that("stream updates the existing dataset and keeps rowid (reasonably) compact", {
+  n <- 100000
+  stream_a <- arrow::arrow_table(group_customer_no = sample(seq(n/100),n,replace=T),
+                                 timestamp = sample(seq(as_datetime("2022-04-01"),as_datetime("2023-12-31"),by="day"),
+                                                    n,replace=T),
+                                 feature_a = runif(n)) 
+  stream_b <- arrow::arrow_table(group_customer_no = sample(seq(n/100),n,replace=T),
+                                 timestamp = sample(seq(as_datetime("2022-04-01"),as_datetime("2023-12-31"),by="day"),
+                                                    n,replace=T),
+                                 feature_b = runif(n),
+                                 pk = sample(seq(n),n)) 
+  stream_cache <- data.table(group_customer_no = sample(seq(n/100),n,replace=T),
+                                     rowid = seq(n),
+                                     timestamp = sample(seq(as_datetime("2022-01-01"),as_datetime("2022-08-31"),by="day"),
+                                                        n,replace=T)) %>% setkey(group_customer_no,timestamp)
+  
+  read_cache <- mock(stream_a, stream_b, stream_cache)
+  stream_chunk_write <- mock()
+  stub(stream, "read_cache", read_cache)
+  stub(stream, "stream_chunk_write", stream_chunk_write)
+  stub(stream, "sync_cache", NULL)
+  stub(stream, "cache_exists_any", TRUE)
+
+  suppressMessages(stream(streams = c("stream_a","stream_b"), chunk_size = n, since = as_datetime("2022-03-31")))
+  stream <- rbindlist(list(collect(stream_a),collect(stream_b)),fill=T)
+  stream_cache <- stream_cache %>% collect %>% setDT
+  expect_length(mock_args(stream_chunk_write),2)
+  expect_equal(mock_args(stream_chunk_write)[[1]][[1]][,.N]+
+                 mock_args(stream_chunk_write)[[2]][[1]][,.N],
+               stream[timestamp > as_datetime("2022-03-31"),.N])
+
+  expect_equal(anyDuplicated(c(
+    stream_cache[timestamp <= as_datetime("2022-03-31"),rowid],
+    mock_args(stream_chunk_write)[[1]][[1]][,rowid],
+    mock_args(stream_chunk_write)[[2]][[1]][,rowid])),
+    0)
+  expect_lt(max(mock_args(stream_chunk_write)[[1]][[1]][,rowid],
+                   mock_args(stream_chunk_write)[[2]][[1]][,rowid]),
+               3*n)
 })
 
 test_that("stream rebuilds the whole dataset if `rebuild=TRUE`", {
