@@ -52,13 +52,16 @@ collective_access_stream <- function(ca_table,
       default_params
     })
   
-  records <- collective_access_search(ca_table = ca_table, query = query, base_url = base_url,
-                       login = login) %>%
+  records <- collective_access_search(ca_table = ca_table, 
+                                      query = query, 
+                                      base_url = base_url,
+                                      login = login) %>%
     .[,id := unlist(id)] %>% 
     setkey(id) %>% 
     split(rep(seq_len(nrow(.)),
               each = batch_size,
               length.out = nrow(.)))
+  
   
   results <- list()
   
@@ -100,7 +103,9 @@ collective_access_login <- function(login, base_url) {
   username <- strsplit(login,":")[[1]][1]
   password <- strsplit(login,":")[[1]][2]
 
-  res <- GET(file.path(base_url,"auth","login"),username = username,password = password) %>%
+  res <- GET(file.path(base_url,"auth","login"), 
+             username = username,
+             password = password) %>%
     content
 
   if(!is.null(res) & res$ok %||% F)
