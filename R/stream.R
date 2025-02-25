@@ -52,11 +52,9 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
   
   rlang::inform(c("i" = "planning partitions"))
   stream_max_date <- as_datetime("1900-01-01")
-  stream_max_rowid <- 0
   if(cache_exists_any("stream","stream") & !rebuild) {
     stream <- read_cache("stream","stream")
     stream_max_date <- since
-    stream_max_rowid <- stream %>% filter(timestamp < stream_max_date) %>% summarise(max(rowid)) %>% collect() %>% .[[1]]
   }
     
   
@@ -81,8 +79,7 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
                        collect %>% setDT %>% 
                        .[,timestamp := lubridate::as_datetime(timestamp)]) %>%
       rbindlist(idcol = "stream", fill = T) %>% 
-      .[,`:=` (partition = partition$partition,
-               rowid = seq(stream_max_rowid+1, length.out = .N))]
+      .[,`:=` (partition = partition$partition)]
     
     # do the filling and windowing
     stream_chunk_write(stream, fill_cols = fill_cols, window_cols = window_cols,
@@ -90,7 +87,6 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
                        incremental = incremental, windows = windows, ...)
     
     stream_max_date = partition$timestamp
-    stream_max_rowid = stream_max_rowid + nrow(stream)
     gc()
   }
   
@@ -149,7 +145,7 @@ stream_chunk_write <- function(stream, fill_cols = setdiff(colnames(stream),
     stream_prev <- read_cache("stream", "stream") %>% 
       filter(as_datetime(timestamp) >= as_datetime(since - dyears()) & 
                as_datetime(timestamp) < as_datetime(since)) %>% 
-      select(all_of(c(by,"timestamp")),matches(paste0("^",fill_cols,"$"))) %>% 
+      select(all_of(c(by,"timestamp","rowid")),matches(paste0("^",fill_cols,"$"))) %>% 
       collect %>% setDT
   }
   
@@ -157,12 +153,15 @@ stream_chunk_write <- function(stream, fill_cols = setdiff(colnames(stream),
                   stream[timestamp >= since], fill=T)
   rm(stream_prev)
   setkey(stream, group_customer_no, timestamp)
+  max_rowid <- max(c(0,stream$rowid),na.rm=T)
   
   rlang::inform(c(i = "windowing"))
   # window
   stream <- stream_window_features(stream, window_cols = window_cols, by = by, since = since, ...)
   
   rlang::inform(c(v = "writing cache"))
+  setkey(stream,timestamp)
+  stream[timestamp >= since,rowid:=max_rowid+seq(.N)]
   # save
   args <- list(x = stream[timestamp >= since],
                table_name = "stream",
