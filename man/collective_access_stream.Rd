@@ -76,6 +76,6 @@ Create a dataset from a CollectiveAccess instance.
 
 \item \code{collective_access_search()}: execute a search query
 
-\item \code{collective_access_c()}: Combine several input lists/vectors into a single flat character vector, with no NULL,NA,"null",or "" elements
+\item \code{collective_access_c()}: Combine several input lists/vectors into a single flat vector, with no NULL,NA,"null", "", or pure whitespace elements
 
 }}
