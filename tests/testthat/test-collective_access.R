@@ -91,4 +91,61 @@ test_that("collective_access_c returns a vector of the same type as the input", 
 
 # collective_access_stream ------------------------------------------------
 
+test_that("collective_access_stream sends queries in batches", {
+  ca <- readRDS(rprojroot::find_testthat_root_file("collective_access-search.Rds"))
+  content <- mock(ca)
+  stub(collective_access_search,"POST",NULL)
+  stub(collective_access_search,"content",content)
+  stub(collective_access_search,"collective_access_login","abc123")
+  .collective_access_search <- collective_access_search("occurrences","*",base_url)
+  
+  collective_access_search <- mock(.collective_access_search,
+                                   .collective_access_search[1:2],
+                                   .collective_access_search[3:4],
+                                   .collective_access_search[5:6])
+  
+  stub(collective_access_stream, "collective_access_search", collective_access_search)
+  stub(collective_access_stream, "write_cache", NULL)
+  
+  out <- collective_access_stream("ca_occurrences","collective_access","*",list(),batch_size = 2)
+  expect_length(mock_args(collective_access_search),length(ca$results)/2+1)
+  purrr::map2(
+    mock_args(collective_access_search)[-1] %>% map_chr(2),
+    ca$results %>% map_int("id") %>% sort %>% split(rep(1:3,each=2)),
+    \(a,e) expect_match(a,paste0("\\[",e[1]," TO ",e[2],"\\]")))
+  
+  expect_equal(setkey(out,id),.collective_access_search)
 
+})
+
+test_that("collective_access_stream parses `features` and passes with defaults to collective_access_search", {
+  ca <- readRDS(rprojroot::find_testthat_root_file("collective_access-search.Rds"))
+  content <- mock(ca)
+  stub(collective_access_search,"POST",NULL)
+  stub(collective_access_search,"content",content)
+  stub(collective_access_search,"collective_access_login","abc123")
+  .collective_access_search <- collective_access_search("occurrences","*",base_url)
+  
+  collective_access_search <- mock(.collective_access_search,cycle=T)
+  stub(collective_access_stream, "collective_access_search", collective_access_search)
+  stub(collective_access_stream, "write_cache", NULL)
+  
+  collective_access_stream("ca_occurrences","collective_access","*",
+                           list(
+                             "one_bundle" = "display_label",
+                             "two_bundles" = list("id","idno" = list("with" = "parameter"))
+                           ),
+                           batch_size = 100)
+  expect_length(mock_args(collective_access_search),2)
+  
+  defaults <- list('convertCodesToDisplayText'=T, 'returnAsArray'=T)
+  expect_equal(mock_args(collective_access_search)[[2]][["bundles"]],
+               list("display_label"=defaults,
+                    "id"=defaults,
+                    "idno"=c("with"="parameter",defaults)))
+  
+})
+
+test_that("collective_access_stream removes blanks/nulls and writes out a dataset", {
+  
+})

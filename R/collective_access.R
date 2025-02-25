@@ -27,7 +27,6 @@
 #'      )
 #' )
 #' ```
-#' @inheritParams tessilake::write_cache
 #' @export
 collective_access_stream <- function(ca_table, 
                       table_name = ca_table, 
@@ -66,25 +65,30 @@ collective_access_stream <- function(ca_table,
   idcol <- paste0(gsub("^ca_|s$","",ca_table),"_id")
   
   p <- progressr_(length(records))
-  for (chunk in records) {
-    results <- rbind(results,
-                     collective_access_search(ca_table = ca_table,
-                               query = paste0('(',ca_table,'.',idcol,':[',
-                                              chunk[,min(id)],' TO ',
-                                              chunk[,max(id)],']) AND ',
-                                              query),
-                               base_url = base_url, login = login, bundles = bundles))
+  results <- lapply(records, \(.) {
+     res <- collective_access_search(ca_table = ca_table,
+               query = paste0('(',ca_table,'.',idcol,':[',
+                              min(.$id),' TO ',
+                              max(.$id),']) AND ',
+                              query),
+               base_url = base_url, login = login, bundles = bundles)
     p()
-    
+    res
+    }) %>% rbindlist(fill=T)
+  
+  if(length(features)) {
+    # assemble output dataset
+    results <- results[,lapply(features,\(.) {
+      names <- names(.) %||% as.character(.)
+      if(length(names(.)) == length(as.character(.)) & any(names=="")) {
+        names[names == ""] = as.character(.)[names == ""]
+      }
+      mget(names, inherits = T) %>% collective_access_c()
+    })]
   }
   
-  # assemble output dataset
-  results <- results[,lapply(features,\(.) 
-                             purrr::pmap(mget(names(.) %||% as.character(.), envir = as.environment(results)),
-                                         collective_access_c))]
-  
-  
   write_cache(results, table_name, "stream", ...)
+  results
   
 }
 
@@ -133,7 +137,7 @@ collective_access_search <- function(ca_table, query, base_url, login, bundles =
 #' @param ... lists/vectors to combine
 collective_access_c <- function(...) {
   # get rid of NULLs
-  vec <- unlist(c(...))
+  vec <- unlist(c(...),use.names = F)
   # get rid of NAs, blanks & "null"s
   vec[sapply(vec,trimws) != "" & !sapply(vec,tolower)=="null" & !is.na(vec)]
 }
