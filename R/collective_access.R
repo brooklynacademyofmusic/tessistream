@@ -86,8 +86,8 @@ collective_access_stream <- function(ca_table,
       if(length(names(.)) == length(as.character(.)) & any(names=="")) {
         names[names == ""] = as.character(.)[names == ""]
       }
-      mget(names, inherits = T) %>% collective_access_c()
-    })]
+      mget(names, inherits = T) %>% collective_access_c() %>% list
+    }),by="id"]
   }
   
   write_cache(results, table_name, "stream", ...)

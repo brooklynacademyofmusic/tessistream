@@ -130,7 +130,7 @@ test_that("collective_access_stream parses `features` and passes with defaults t
   stub(collective_access_stream, "collective_access_search", collective_access_search)
   stub(collective_access_stream, "write_cache", NULL)
   
-  collective_access_stream("ca_occurrences","collective_access","*",
+  out <- collective_access_stream("ca_occurrences","collective_access","*",
                            list(
                              "one_bundle" = "display_label",
                              "two_bundles" = list("id","idno" = list("with" = "parameter"))
@@ -144,8 +144,49 @@ test_that("collective_access_stream parses `features` and passes with defaults t
                     "id"=defaults,
                     "idno"=c("with"="parameter",defaults)))
   
+  expect_names(names(out),permutation.of=c("one_bundle","two_bundles","id"))
+  expect_equal(nrow(out),nrow(.collective_access_search))
+  expect_equal(out$one_bundle,.collective_access_search$display_label)
+  expect_equal(out$two_bundles,purrr::map2(.collective_access_search$id,.collective_access_search$idno,c))
 })
 
 test_that("collective_access_stream removes blanks/nulls and writes out a dataset", {
+  ca <- readRDS(rprojroot::find_testthat_root_file("collective_access-search.Rds"))
+  content <- mock(ca)
+  stub(collective_access_search,"POST",NULL)
+  stub(collective_access_search,"content",content)
+  stub(collective_access_search,"collective_access_login","abc123")
+  .collective_access_search <- collective_access_search("occurrences","*",base_url)
+  .collective_access_search[id==min(unlist(id)),idno:=NA]
+  .collective_access_search[id==min(unlist(id)),display_label:=""]
   
+  collective_access_search <- mock(.collective_access_search,cycle=T)
+  stub(collective_access_stream, "collective_access_search", collective_access_search)
+  
+  write_cache <- mock()
+  stub(collective_access_stream, "write_cache", write_cache)
+  
+  out <- collective_access_stream("ca_occurrences","collective_access","*",
+                                  list(
+                                    "one_bundle" = "display_label",
+                                    "two_bundles" = list("id","idno" = list("with" = "parameter"))
+                                  ),
+                                  batch_size = 100)
+  expect_length(mock_args(collective_access_search),2)
+  
+  defaults <- list('convertCodesToDisplayText'=T, 'returnAsArray'=T)
+  expect_equal(mock_args(collective_access_search)[[2]][["bundles"]],
+               list("display_label"=defaults,
+                    "id"=defaults,
+                    "idno"=c("with"="parameter",defaults)))
+  
+  expect_names(names(out),permutation.of=c("one_bundle","two_bundles","id"))
+  expect_equal(nrow(out),nrow(.collective_access_search))
+  expect_equal(out$one_bundle[1],list(character()))
+  expect_equal(out$two_bundles[1],list(.collective_access_search$id[1]))
+  expect_equal(out$one_bundle[2:6],.collective_access_search$display_label[2:6])
+  expect_equal(out$two_bundles[2:6],purrr::map2(.collective_access_search$id,.collective_access_search$idno,c)[2:6])
+  
+  expect_length(mock_args(write_cache),1)
+  expect_equal(mock_args(write_cache)[[1]][[1]],out)
 })
