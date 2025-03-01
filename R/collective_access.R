@@ -27,6 +27,7 @@
 #'      )
 #' )
 #' ```
+#' @inheritDotParams tessilake::write_cache incremental sync 
 #' @export
 collective_access_stream <- function(ca_table, 
                       table_name = ca_table, 
@@ -93,7 +94,7 @@ collective_access_stream <- function(ca_table,
     }),by="id"]
   }
   
-  write_cache(results, table_name, "stream", ...)
+  write_cache(results, table_name, "stream", overwrite = TRUE, ...)
   results
   
 }

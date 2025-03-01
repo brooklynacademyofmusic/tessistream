@@ -57,7 +57,12 @@ be a list in order to specify additional parameters (e.g. \code{template}, \code
 
 \item{batch_size}{\href{1}{integer} number of records to request per query}
 
-\item{...}{lists/vectors to combine}
+\item{...}{
+  Arguments passed on to \code{\link[tessilake:write_cache]{tessilake::write_cache}}
+  \describe{
+    \item{\code{incremental}}{boolean, whether to call \link[tessilake]{cache_update} or \link[tessilake]{cache_write} to update the cached dataset.}
+    \item{\code{sync}}{boolean, whether or not to sync the written cache to other storages}
+  }}
 
 \item{bundles}{\link{list} of bundles, as described in \href{https://manual.collectiveaccess.org/providence/developer/web_service_api.html#searching}{the CollectiveAccess API documentation}. The
 name should be a bundle specifier and the value should be a list of parameters or an empty list.}
