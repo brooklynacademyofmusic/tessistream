@@ -79,6 +79,9 @@ collective_access_stream <- function(ca_table,
     res
     }) %>% rbindlist(fill=T)
   
+  atomic_cols <- which(sapply(results,\(.) all(sapply(.,length)==1)))
+  results[,(atomic_cols) := lapply(.SD,unlist), .SDcols=atomic_cols]
+  
   if(length(features)) {
     # assemble output dataset
     results <- results[,lapply(features,\(.) {

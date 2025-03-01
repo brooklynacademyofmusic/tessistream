@@ -113,9 +113,30 @@ test_that("collective_access_stream sends queries in batches", {
     mock_args(collective_access_search)[-1] %>% map_chr(2),
     ca$results %>% map_int("id") %>% sort %>% split(rep(1:3,each=2)),
     \(a,e) expect_match(a,paste0("\\[",e[1]," TO ",e[2],"\\]")))
-  
-  expect_equal(setkey(out,id),.collective_access_search)
 
+})
+
+test_that("collective_access_stream unlists atomic columns", {
+  ca <- readRDS(rprojroot::find_testthat_root_file("collective_access-search.Rds"))
+  content <- mock(ca)
+  stub(collective_access_search,"POST",NULL)
+  stub(collective_access_search,"content",content)
+  stub(collective_access_search,"collective_access_login","abc123")
+  .collective_access_search <- collective_access_search("occurrences","*",base_url)
+  
+  collective_access_search <- mock(.collective_access_search,
+                                   .collective_access_search[1:2],
+                                   .collective_access_search[3:4],
+                                   .collective_access_search[5:6])
+  
+  stub(collective_access_stream, "collective_access_search", collective_access_search)
+  stub(collective_access_stream, "write_cache", NULL)
+  
+  out <- collective_access_stream("ca_occurrences","collective_access","*",list(),batch_size = 2)
+  
+  atomic_cols <- c("idno","occurrence_id","display_label")
+  expect_equal(setkey(out,id),.collective_access_search[, (atomic_cols) := lapply(.SD,unlist), .SDcols = atomic_cols])
+  
 })
 
 test_that("collective_access_stream parses `features` and passes with defaults to collective_access_search", {
@@ -183,7 +204,7 @@ test_that("collective_access_stream removes blanks/nulls and writes out a datase
   expect_names(names(out),permutation.of=c("one_bundle","two_bundles","id"))
   expect_equal(nrow(out),nrow(.collective_access_search))
   expect_equal(out$one_bundle[1],list(character()))
-  expect_equal(out$two_bundles[1],list(.collective_access_search$id[1]))
+  expect_equal(out$two_bundles[1],list(as.character(.collective_access_search$id[1])))
   expect_equal(out$one_bundle[2:6],.collective_access_search$display_label[2:6])
   expect_equal(out$two_bundles[2:6],purrr::map2(.collective_access_search$id,.collective_access_search$idno,c)[2:6])
   
