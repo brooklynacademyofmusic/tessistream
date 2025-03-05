@@ -151,24 +151,3 @@ collective_access_c <- function(...) {
   vec[sapply(vec,trimws) != "" & !sapply(vec,tolower)=="null" & !is.na(vec)]
 }
 
-query <- '(ca_occurrences.type_id:"installation" OR
-          ca_occurrences.type_id:"bam_internal" OR
-          ca_occurrences.type_id:"movie" OR
-          ca_occurrences.type_id:"production" OR
-          ca_occurrences.type_id:"artist_residency" OR
-          ca_occurrences.type_id:"special_event")'
-
-features <- list("id" = "occurrence_id",
-                 "idno" = "idno",
-                 "name" = "preferred_labels",
-                 "series" = list("series","minor_bam_programming","screen_series"),
-                 "season" = "ca_occurrences.hierarchy.preferred_labels",
-                 "date" = list("productionDate","screeningDate"),
-                 "description" = "productionDescription",
-                 "genre" = list("genre","performance_elements"),
-                 "venue" = "venue",
-                 "artists" = list("ca_entities" = list(
-                   "template" = "<unit relativeTo='ca_entities' delimiter='|'>^preferred_labels (^relationship_typename)</unit>")),
-                 "origin_language" = list("country_origin_list","productionLanguage","translation"))
-
-
