@@ -230,6 +230,10 @@ stream_from_audit <- function(table_name, cols = NULL, ...) {
               last_updated_by) %>%
     collect() %>%
     setDT()
+  
+  # convert audited columns to character to match audit table
+  stream_cols <- intersect(cols,colnames(stream_current))
+  stream_current[,(stream_cols) := lapply(.SD,as.character), .SDcols = stream_cols]
 
   setkey(audit, timestamp)
 
