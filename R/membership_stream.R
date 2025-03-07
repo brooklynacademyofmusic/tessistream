@@ -27,8 +27,17 @@
 #'
 #' @return [arrow::Table] of membership data
 #' @export
-#'
+#' @importFrom lubridate parse_date_time
 membership_stream <- function() {
+  
+  m <- stream_from_audit("memberships")
+  date_cols <- c("init_dt","expr_dt")
+  m[, (date_cols) := lapply(.SD, parse_date_time, 
+                            orders = paste0(c("ymd","mdy"),rep(c("","HM","HMS"),each=2))), 
+    .SDcols = date_cols]
+  
+  m <- m[is.na(action) | !grepl("deleted",action,ignore.case=T)]
+  m[, memb_level := gsub(" .+","",memb_level)]
   
 }
 
