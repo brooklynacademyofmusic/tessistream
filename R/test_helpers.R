@@ -301,3 +301,17 @@ collective_access_prepare_fixtures <- function() {
     )
 
 }
+
+
+# membership_stream -------------------------------------------------------
+
+
+membership_stream_prepare_fixtures <- function() {
+  m <- stream_from_audit("memberships")
+  
+  anonymized <- c("group_customer_no","customer_no","cust_memb_no")
+  m[,(anonymized) := lapply(.SD,data.table::frank,ties.method="dense"), 
+    .SDcols = anonymized]
+  
+  saveRDS(m,rprojroot::find_testthat_root_file("membership_stream.Rds"))
+}

@@ -37,7 +37,43 @@ membership_stream <- function() {
     .SDcols = date_cols]
   
   m <- m[is.na(action) | !grepl("deleted",action,ignore.case=T)]
+  # remove the added expiration dates
   m[, memb_level := gsub(" .+","",memb_level)]
+  
+  setkey(m,cust_memb_no,timestamp)
+  
+  # starts <- m[m[init_dt != lag(init_dt) | 
+  #                 event_subtype %in% c("Creation"),
+  #               .I, by="cust_memb_no"]$I,
+  #             .(timestamp = max(timestamp,init_dt),
+  #               event_subtype = "Start"),
+  #             by="cust_memb_no"]
+  
+  ends <- m[event_subtype == "Current",
+            .(timestamp = expr_dt, 
+              cust_memb_no,
+              event_subtype = "End")]
+  
+  m <- m[,.(timestamp, customer_no, group_customer_no,
+            event_type == "Membership")]
+  
+  #arrow::as_arrow_table(m)
   
 }
 
+#' @importFrom data.table shift
+membership_tree <- function() {
+  m <- read_tessi("memberships") %>% collect %>% setDT
+  setkey(m,group_customer_no,init_dt)  
+  
+  cols <- c("cust_memb_no_prev","cust_memb_no_next")
+  
+  for(col in cols) {
+    n <- ifelse(col == "cust_memb_no_prev", 1, -1)
+    m[,(col) := shift(cust_memb_no,n), by = c("group_customer_no","memb_org_no")]
+    m[,(col) := coalesce(get(col),shift(cust_memb_no,n)), by = c("group_customer_no")]
+  }
+  
+  m
+}
+ 
