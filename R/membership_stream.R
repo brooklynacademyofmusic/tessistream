@@ -42,25 +42,39 @@ membership_stream <- function() {
   
   setkey(m,cust_memb_no,timestamp)
   
-  # starts <- m[m[init_dt != lag(init_dt) | 
-  #                 event_subtype %in% c("Creation"),
-  #               .I, by="cust_memb_no"]$I,
-  #             .(timestamp = max(timestamp,init_dt),
-  #               event_subtype = "Start"),
-  #             by="cust_memb_no"]
+  starts <- m[m[init_dt != lag(init_dt) |
+                  event_subtype %in% c("Creation"),
+                .I, by="cust_memb_no"]$I,
+              .(timestamp = max(timestamp),
+                init_dt = max(init_dt)),
+              by="cust_memb_no"] %>% 
+    .[.(timestamp = pmax(timestamp,init_dt),
+        event_subtype = "Start",
+        cust_memb_no)]  
   
-  ends <- m[event_subtype == "Current",
-            .(timestamp = expr_dt, 
-              cust_memb_no,
-              event_subtype = "End")]
+  ends <- m[m[expr_dt != lag(expr_dt) |
+                  event_subtype %in% c("Current"),
+                .I, by="cust_memb_no"]$I,
+            .(timestamp = max(timestamp),
+              expr_dt = max(expr_dt)),
+            by="cust_memb_no"] %>%
+    .[.(timestamp = pmax(timestamp,expr_dt),
+        event_subtype = "End",
+        cust_memb_no)]  
   
-  m <- m[,.(timestamp, customer_no, group_customer_no,
-            event_type == "Membership")]
+  
+  
+  m <- m[event_subtype=="Current",
+         .(timestamp, customer_no, group_customer_no, cust_memb_no,
+            event_type = "Membership")] %>%
+    setleftjoin(starts, by = c("cust_memb_no")) %>% 
+    setleftjoin(ends, by = c("cust_memb_no"))
   
   #arrow::as_arrow_table(m)
   
 }
 
+#' 
 #' @importFrom data.table shift
 membership_tree <- function() {
   m <- read_tessi("memberships") %>% collect %>% setDT
@@ -76,4 +90,38 @@ membership_tree <- function() {
   
   m
 }
- 
+
+#' stream_effective_date
+#' 
+#' The effective date/time of a changing date/time column `dt` is the last 
+#' change before that change becomes effective, i.e. when `dt == timestamp`.
+#'
+#' @param stream `data.table` with `timestamp`, and the columns named in `column`
+#' and `by`, if defined.
+#' @param column `character(1)` column name to make effective, must identify
+#' a date or datetime column.
+#' @param by `character(1)` optional column name to group rows by
+#' @return `data.table` with columns named by `column` and `by`
+#' @export
+#'
+stream_effective_date <- function(stream, column, by = NULL) {
+  assert_data_table(stream)
+  assert_names(names(stream), must.include = c(column,by,"timestamp"))
+  assert_posixct(stream[,column,with=F])
+  
+  setkeyv(stream,c(by,"timestamp"))
+  
+  stream[  
+    # not the first row of the group
+    get(by) == shift(get(by)) & 
+    # column has changed
+      get(column) != shift(get(column)) & 
+    # column isn't effective yet
+      column >= timestamp | 
+    # or is the first row of the group
+      get(by) != shift(get(by)),
+    .(timestamp = pmax(timestamp, get(column)))] %>% 
+    .[,.(timestamp = max(timestamp)), by = by]
+  
+  stream
+}
