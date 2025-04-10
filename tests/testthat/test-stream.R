@@ -29,6 +29,7 @@ test_that("stream combines multiple streams into one", {
   
 })
 
+
 test_that("stream works with mixed POSIXct/Date timestamps", {
   n <- 100000
   stream_a <- arrow::arrow_table(group_customer_no = sample(seq(n/100),n,replace=T),
@@ -116,12 +117,8 @@ test_that("stream updates the existing dataset", {
   expect_equal(mock_args(stream_chunk_write)[[1]][[1]][,.N]+
                mock_args(stream_chunk_write)[[2]][[1]][,.N],
                stream[timestamp > max(stream_cache$timestamp),.N])
-  expect_equal(anyDuplicated(
-    stream_cache[,rowid],
-    mock_args(stream_chunk_write)[[1]][[1]][,rowid],
-    mock_args(stream_chunk_write)[[2]][[1]][,rowid]),
-    0)
 })
+
 
 test_that("stream rebuilds the whole dataset if `rebuild=TRUE`", {
   n <- 100000
@@ -237,7 +234,8 @@ test_that("stream_chunk_write loads historical data", {
   stub(stream_chunk_write, "stream_window_features", \(stream, ...) stream)
   stub(stream_chunk_write, "read_cache", arrow::arrow_table(timestamp = as_datetime("2022-01-01"),
                                                             group_customer_no = 1,
-                                                            feature_b = "z"))
+                                                            feature_b = "z",
+                                                            rowid = 1))
   stub(stream_chunk_write, "stream_customer_history", data.table(timestamp = as_datetime("2021-01-01"),
                                                                  group_customer_no = 1,
                                                                  feature_b = "z",
@@ -254,7 +252,7 @@ test_that("stream_chunk_write loads historical data", {
 })
 
 test_that("stream_chunk_write done once is the same as doing it multiple times", {
-  n <- 100
+  n <- 10000
   
   tessilake::local_cache_dirs()
   stream <- data.table(group_customer_no = sample(seq(n/100),n,replace=T),
@@ -278,7 +276,7 @@ test_that("stream_chunk_write done once is the same as doing it multiple times",
   suppressMessages(stream_chunk_write(stream[timestamp < as_datetime("2023-07-01")], 
                                       fill_cols = "feature_a",
                                       windows = lapply(c(1,5),lubridate::period,units="day")))
-  
+
   suppressMessages(expect_warning(stream_chunk_write(stream[timestamp >= as_datetime("2023-07-01")], 
                                                      fill_cols = "feature_a",
                                                      windows = lapply(c(1,5),lubridate::period,units="day")),

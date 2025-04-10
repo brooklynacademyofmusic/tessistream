@@ -47,7 +47,7 @@ Imports:
     tidycensus,
     tidygeocoder,
     tidyr,
-    tigris,
+    tigris (>= 2.2.0),
     withr,
     tidyselect,
     arrow,
@@ -55,6 +55,6 @@ Imports:
     openxlsx,
     config
 Remotes: 
-    skysyzygy/tessilake,
     chris-prener/censusxy,
-    tidyverse/dbplyr
+    skysyzygy/tessilake,
+    walkerke/tigris

@@ -1,3 +1,5 @@
+# address_stream ----------------------------------------------------------
+
 address_geocode_prepare_fixtures <- function() {
   tessilake::local_cache_dirs()
 
@@ -93,8 +95,11 @@ address_prepare_fixtures <- function() {
   saveRDS(addresses, testthat::test_path("addresses.Rds"))
 }
 
+
+# contribution_stream -----------------------------------------------------
+
 #' @importFrom stats runif
-contributions_stream_prepare_fixtures <- function() {
+contribution_stream_prepare_fixtures <- function() {
   . <- memb_amt <- start_amt <- recog_amt <- AVC_amt <- end_amt <- cont_amt <-
     group_customer_no <- cust_memb_no <- create_dt <- init_dt <- cont_dt <-
     campaign_category_desc <- NULL
@@ -160,6 +165,9 @@ contributions_stream_prepare_fixtures <- function() {
   saveRDS(memberships, "tests/testthat/contribution_stream-memberships.Rds")
 }
 
+
+# duplicate_stream --------------------------------------------------------
+
 duplicates_prepare_fixtures <- function() {
   withr::local_envvar(R_CONFIG_FILE="")
 
@@ -193,6 +201,8 @@ duplicates_prepare_fixtures <- function() {
   saveRDS(emails, rprojroot::find_testthat_root_file("duplicates_stream-emails.Rds"))
 
 }
+
+# email_stream ------------------------------------------------------------
 
 email_prepare_fixtures <- function() {
 
@@ -239,6 +249,7 @@ email_prepare_fixtures <- function() {
 
 }
 
+# p2_stream ---------------------------------------------------------------
 
 p2_prepare_fixtures <- function() {
   stub <- mutate <- across <- any_of <- NULL
@@ -271,4 +282,22 @@ p2_prepare_fixtures <- function() {
   })
 
   invisible()
+}
+
+# collective_access_stream ------------------------------------------------
+
+collective_access_prepare_fixtures <- function() {
+  #base_url <- config::get("tessistream")$collective_access_base_url
+  #login <- config::get("tessistream")$collective_access_login
+  
+  POST(file.path(base_url,"find","ca_occurrences"),
+       query = list(q = "ca_occurrences.preferred_labels:Einstein on the Beach", 
+                    authToken = collective_access_login(base_url = base_url, login = login)),
+       body = list(bundles = list(ca_entities=list(returnAsArray=T),
+                                  venue=list(convertCodesToDisplayText=T))),
+       encode = "json") %>%
+    content %>% saveRDS(
+      rprojroot::find_testthat_root_file("collective_access-search.Rds")
+    )
+
 }
