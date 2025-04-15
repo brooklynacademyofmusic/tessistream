@@ -84,7 +84,7 @@ address_normalize <- function(address_stream) {
 
   address_stream$street2_cleaned = NA_character_
   # fill in street2_cleaned
-  address_stream[street1_cleaned != coalesce(libpostal.po_box, libpostal.unit, libpostal.house),
+  address_stream[tolower(street1_cleaned) != tolower(coalesce(libpostal.po_box, libpostal.unit, libpostal.house)),
                  street2_cleaned := coalesce(libpostal.po_box, libpostal.unit, libpostal.house)]
   # add unit to street1_cleaned if it wasn't added to street2
   address_stream[!is.na(libpostal.unit) & street2_cleaned != libpostal.unit,
