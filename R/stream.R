@@ -18,7 +18,7 @@
 #' @importFrom dplyr collect filter transmute
 #' @importFrom tessilake read_cache cache_exists_any write_cache sync_cache
 #' @importFrom checkmate assert_character assert_logical assert_list
-#' @importFrom lubridate as_datetime now dyears
+#' @importFrom lubridate as_datetime now dyears dmonths
 #' @param ... not used
 #'
 #' @return stream dataset as an [arrow::Table]
@@ -57,14 +57,15 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
     stream_max_date <- since
   }
     
-  
-  timestamps <- lapply(streams, \(stream) transmute(stream, timestamp = as_datetime(timestamp)) %>% collect) %>% 
-    rbindlist %>% setkey(timestamp) %>% .[,partition := rep(seq_len(.N), each = chunk_size, 
-                                                            length.out = .N)]
-  
-  partitions <- timestamps[!is.na(timestamp) & 
-                             timestamp > stream_max_date,.(timestamp = max(timestamp)),by="partition"]
-  rm(timestamps)
+  partitions <- lapply(streams, \(stream) 
+                       filter(stream, timestamp > stream_max_date) %>% 
+                         group_by(partition = as_datetime(floor_date(timestamp,"month"))) %>% 
+                         summarize %>% 
+                         collect) %>% 
+    rbindlist %>% distinct %>% .[!is.na(partition)]
+
+  setkey(partitions,partition)
+  partitions[,timestamp := partition+dmonths()]
   
   for(partition in split(partitions, partitions$partition)) {
     
@@ -73,7 +74,7 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
     
     # load data from streams
     stream <- lapply(streams, \(stream) filter(stream, timestamp > as_datetime(stream_max_date) & 
-                                                       timestamp <= as_datetime(partition$timestamp)) %>% 
+                                                       timestamp < as_datetime(partition$timestamp)) %>% 
                        mutate(timestamp_id = arrow:::cast(lubridate::as_datetime(timestamp), 
                                                           arrow::int64())) %>%
                        collect %>% setDT %>% 
