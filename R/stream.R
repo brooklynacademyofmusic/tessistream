@@ -164,6 +164,7 @@ stream_chunk_write <- function(stream, fill_cols = setdiff(colnames(stream),
   setkey(stream,timestamp)
   stream[timestamp >= since,rowid:=max_rowid+seq(.N)]
   # save
+  setkey(stream, rowid)
   args <- list(x = stream[timestamp >= since],
                table_name = "stream",
                type = "stream",
