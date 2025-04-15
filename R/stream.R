@@ -82,12 +82,16 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
       rbindlist(idcol = "stream", fill = T) %>% 
       .[,`:=` (partition = partition$partition)]
     
+    stream_max_date = partition$timestamp
+
+    if(nrow(stream) == 0) 
+      next
+    
     # do the filling and windowing
     stream_chunk_write(stream, fill_cols = fill_cols, window_cols = window_cols,
                        since = min(stream$timestamp),
                        incremental = incremental, windows = windows, ...)
     
-    stream_max_date = partition$timestamp
     gc()
   }
   
