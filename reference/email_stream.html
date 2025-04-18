@@ -99,7 +99,7 @@ Features included are:</p><ul><li><p>group_customer_no, customer_no</p></li>
 <span></span>
 <span><span class="fu">email_stream_chunk</span><span class="op">(</span>from_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"1900-01-01"</span><span class="op">)</span>, to_date <span class="op">=</span> <span class="fu">now</span><span class="op">(</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">email_stream_write_partition</span><span class="op">(</span><span class="va">email_stream</span><span class="op">)</span></span>
+<span><span class="fu">email_stream_write_partition</span><span class="op">(</span><span class="va">email_stream</span>, table_name <span class="op">=</span> <span class="st">"email_stream_full"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">email_stream</span><span class="op">(</span>from_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"1900-01-01"</span><span class="op">)</span>, to_date <span class="op">=</span> <span class="fu">now</span><span class="op">(</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -126,6 +126,10 @@ Features included are:</p><ul><li><p>group_customer_no, customer_no</p></li>
 
 <dt id="arg-email-stream">email_stream<a class="anchor" aria-label="anchor" href="#arg-email-stream"></a></dt>
 <dd><p>email data from previous step</p></dd>
+
+
+<dt id="arg-table-name">table_name<a class="anchor" aria-label="anchor" href="#arg-table-name"></a></dt>
+<dd><p><code>character(1)</code> name of the cache to write out</p></dd>
 
 </dl></div>
     <div class="section level2">
