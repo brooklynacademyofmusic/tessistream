@@ -290,11 +290,13 @@ test_that("email_data clears any primary_key info", {
 
 email_stream_chunk <- NULL
 
-test_that("email_stream_chunk returns arrow table", {
+test_that("email_stream_chunk returns arrow table and outputs two", {
   tessilake::local_cache_dirs()
   email_stream_chunk <<- email_stream_chunk_stubbed()
   # returns an arrow table
   expect_class(email_stream_chunk,"ArrowTabular")
+  expect_gt(length(tessilake:::cache_files("email_stream_full","deep","stream")),0)
+  expect_gt(length(tessilake:::cache_files("email_stream","deep","stream")),0)
 })
 
 test_that("email_stream_chunk returns all rows with basic info",{
@@ -382,7 +384,6 @@ test_that("email_stream_chunk runs successfully when there's nothing to do",{
   stub(email_stream_chunk_stubbed, "email_stream_base_stubbed",
        email_stream_base_stubbed(from_date = as.POSIXct("1900-01-01"), to_date = as.POSIXct("1900-01-02")))
 
-  debugonce(email_stream_chunk_stubbed)
   expect_equal(nrow(email_stream_chunk_stubbed()),1)
 })
 
