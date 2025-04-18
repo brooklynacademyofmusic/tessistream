@@ -345,7 +345,6 @@ test_that("email_stream_chunk returns the same result when run with one or many 
   email_data <- email_stream_chunk %>% select(timestamp) %>% collect %>% setDT
   setkey(email_data,timestamp)
   email_data[,group := cut(seq(.N),breaks=5,labels=F)]
-
   purrr::imap(split(email_data,by="group"),
     \(group, i) {
         expr <- quote(email_stream_chunk_stubbed(from_date = group[,min(timestamp,na.rm=T)],
@@ -360,7 +359,7 @@ test_that("email_stream_chunk returns the same result when run with one or many 
 
   rows <- seq(1,by=100,length.out=1000)
 
-  email_stream <- read_cache("email_stream","stream") %>% collect %>% setDT %>%
+  email_stream <- read_cache("email_stream_full","stream") %>% collect %>% setDT %>%
     distinct %>%
     setkey(group_customer_no,timestamp_id,source_no,event_subtype,campaign_no,appeal_no)
   email_stream_expected <- email_stream_chunk %>% collect %>% setDT %>%
@@ -383,6 +382,7 @@ test_that("email_stream_chunk runs successfully when there's nothing to do",{
   stub(email_stream_chunk_stubbed, "email_stream_base_stubbed",
        email_stream_base_stubbed(from_date = as.POSIXct("1900-01-01"), to_date = as.POSIXct("1900-01-02")))
 
+  debugonce(email_stream_chunk_stubbed)
   expect_equal(nrow(email_stream_chunk_stubbed()),1)
 })
 

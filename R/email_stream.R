@@ -333,20 +333,23 @@ email_stream_chunk <- function(from_date = as.POSIXct("1900-01-01"), to_date = n
 
   email_stream_write_partition(email_stream)
 
-  if(cache_exists_any("email_stream","stream")) {
-    email_stream <- read_cache("email_stream","stream") %>%
+  if(cache_exists_any("email_stream_full","stream")) {
+    email_stream <- read_cache("email_stream_full","stream") %>%
       filter(timestamp >= from_date & timestamp < to_date) %>%
       email_subtype_features %>% compute
   }
 
   suppressWarnings(email_stream_write_partition(email_stream))
+  suppressWarnings(email_stream_write_partition(email_stream %>% filter(event_subtype != "Send"), 
+                               table_name = "email_stream"))
 
   email_stream
 
 }
 
 #' @describeIn email_stream write one partition of the stream to disk
-email_stream_write_partition <- function(email_stream) {
+#' @param table_name `character(1)` name of the cache to write out
+email_stream_write_partition <- function(email_stream, table_name = "email_stream_full") {
   timestamp <- NULL
 
   if(nrow(email_stream) == 0) {
@@ -355,11 +358,11 @@ email_stream_write_partition <- function(email_stream) {
 
   # add year column for partitioning
   email_stream <- email_stream %>%
-    mutate(year = year(timestamp)) %>%
+    mutate(year = as.integer(year(timestamp))) %>%
     compute
 
   # write partitioned dataset
-  write_cache(email_stream, "email_stream", "stream",
+  write_cache(email_stream, table_name, "stream",
               partition = "year",
               date_column = "timestamp",
               prefer = "from",
