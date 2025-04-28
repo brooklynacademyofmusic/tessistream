@@ -18,7 +18,7 @@
 #' @importFrom dplyr collect filter transmute
 #' @importFrom tessilake read_cache cache_exists_any write_cache sync_cache
 #' @importFrom checkmate assert_character assert_logical assert_list
-#' @importFrom lubridate as_datetime now dyears dmonths
+#' @importFrom lubridate as_datetime now years
 #' @param ... not used
 #'
 #' @return stream dataset as an [arrow::Table]
@@ -59,13 +59,13 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
     
   partitions <- lapply(streams, \(stream) 
                        filter(stream, timestamp > stream_max_date) %>% 
-                         group_by(partition = as_datetime(floor_date(timestamp,"month"))) %>% 
+                         group_by(partition = as_datetime(floor_date(timestamp,"year"))) %>% 
                          summarize %>% 
                          collect) %>% 
     rbindlist %>% distinct %>% .[!is.na(partition)]
 
   setkey(partitions,partition)
-  partitions[,timestamp := partition+dmonths()]
+  partitions[,timestamp := partition+years()]
   
   for(partition in split(partitions, partitions$partition)) {
     
@@ -82,7 +82,7 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
       rbindlist(idcol = "stream", fill = T) %>% 
       .[,`:=` (partition = partition$partition)]
     
-    stream_max_date = partition$timestamp
+    stream_max_date = max(stream$timestamp)
 
     if(nrow(stream) == 0) 
       next
