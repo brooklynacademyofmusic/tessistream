@@ -53,14 +53,19 @@ survey_stream <- function(survey_dir = config::get("tessistream")$survey_dir, re
   
   customer_no_question <- survey_stream %>% dcast(address+timestamp~question+subquestion,
                                                   value.var="answer", sep ="||") %>% 
-    survey_find_column(\(.) as.numeric(.) %in% as.integer(customers$customer_no) & !duplicated(.), criterion = .9*nrow(.)) %>% 
+    survey_find_column(\(.) as.numeric(.) %in% as.integer(customers$customer_no) &
+                            as.numeric(.) > year(today()), 
+                       criterion = .9*nrow(.)) %>% 
     names %>% strsplit("||",fixed = T)
 
   if (length(customer_no_question) > 0) {
     rlang::warn("Found customer number question, anonymizing:",body=c("*"=customer_no_question[[1]][[1]]))
     # fill in missing customer info
-    survey_stream[survey_stream[question == customer_no_question[[1]][[1]]], `:=`(customer_no=coalesce(customer_no,as.numeric(i.answer),as.numeric(response_id))), on = "address"]
+    survey_stream[survey_stream[question == customer_no_question[[1]][[1]]], 
+                  `:=`(customer_no=coalesce(customer_no,as.numeric(i.answer))), on = "address"]
   }
+  
+  survey_stream[, customer_no := coalesce(customer_no, as.numeric(response_id))]
 
   # and anonymize
   survey_stream[,`:=`(group_customer_hash = anonymize(group_customer_no),
