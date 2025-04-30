@@ -42,7 +42,7 @@ test_that("survey_monkey returns a data.table of survey data", {
     "More than one column found")
   
   expect_data_table(survey_data)
-  expect_names(colnames(survey_data),permutation.of=c("email","timestamp","question","subquestion","answer"))
+  expect_names(colnames(survey_data),permutation.of=c("email","timestamp","id","question","subquestion","answer"))
 })
 
 test_that("survey_monkey identifies emails and timestamp columns", {
@@ -110,7 +110,7 @@ test_that("survey_stream returns a data.table", {
   expect_warning(survey_stream <- survey_stream(),"Found customer number question.+Customer number")
   
   expect_data_table(survey_stream)
-  expect_names(colnames(survey_stream), permutation.of=c("customer_hash","group_customer_hash","timestamp","survey","question","subquestion","answer","filename"))
+  expect_names(colnames(survey_stream), permutation.of=c("customer_hash","group_customer_hash","timestamp","id","survey","question","subquestion","answer","filename"))
   expect_equal(survey_stream$filename[1],rprojroot::find_testthat_root_file("survey_data/Audience_Survey_Spring_2024.xlsx"))
 })
 
