@@ -59,7 +59,7 @@ survey_stream <- function(survey_dir = config::get("tessistream")$survey_dir, re
   if (length(customer_no_question) > 0) {
     rlang::warn("Found customer number question, anonymizing:",body=c("*"=customer_no_question[[1]][[1]]))
     # fill in missing customer info
-    survey_stream[survey_stream[question == customer_no_question[[1]][[1]]], `:=`(customer_no=coalesce(customer_no,as.numeric(i.answer),as.numeric(id))), on = "address"]
+    survey_stream[survey_stream[question == customer_no_question[[1]][[1]]], `:=`(customer_no=coalesce(customer_no,as.numeric(i.answer),as.numeric(response_id))), on = "address"]
   }
 
   # and anonymize
@@ -117,7 +117,7 @@ survey_monkey <- function(file) {
   timestamp_column <- survey_find_column(survey_data, \(.) between(as.numeric(.),40000,50000))
   
   # Response ID column
-  id_column <- survey_find_column(survey_data, \(.) as.numeric(.)>100000 & !duplicated(.))
+  response_id_column <- survey_find_column(survey_data, \(.) as.numeric(.)>100000 & !duplicated(.))
   
   # questions / sub-questions
   questions <- data.table(question = colnames(survey_data), # question is column name
@@ -132,9 +132,9 @@ survey_monkey <- function(file) {
 
   # melt data
   survey_stream <- survey_data[-1,] %>%
-    melt(id.vars = c(email_column, timestamp_column, id_column),
+    melt(id.vars = c(email_column, timestamp_column, response_id_column),
          variable.name = "id", value.name = "answer") %>% left_join(questions, by="id")
-  setnames(survey_stream, as.character(c(email_column, timestamp_column, id_column)),c("email","timestamp", "id"))
+  setnames(survey_stream, as.character(c(email_column, timestamp_column, response_id_column)),c("email","timestamp", "response_id"))
 
   survey_stream <- survey_stream[!is.na(answer)]
   survey_stream[,`:=`(id = NULL,
