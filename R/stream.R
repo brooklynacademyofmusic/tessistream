@@ -144,6 +144,7 @@ stream_chunk_write <- function(stream, fill_cols = setdiff(colnames(stream),
   setnafill(stream, type = "locf", cols = fill_cols, by = by)
   
   # load the last year for windowing
+  max_rowid <- 0
   if(cache_exists_any("stream","stream")) {
     
     rlang::inform(c(i = "loading previous year"))
@@ -152,14 +153,17 @@ stream_chunk_write <- function(stream, fill_cols = setdiff(colnames(stream),
                as_datetime(timestamp) < as_datetime(since)) %>% 
       select(all_of(c(by,"timestamp","rowid")),matches(paste0("^",fill_cols,"$"))) %>% 
       collect %>% setDT
+    
+    max_rowid <- read_cache("stream","stream") %>% 
+      filter(timestamp < as_datetime(since)) %>%
+      summarize(max(rowid)) %>% collect %>% as.numeric()
   }
   
   stream <- rbind(stream_prev,
                   stream[timestamp >= since], fill=T)
   rm(stream_prev)
   setkey(stream, group_customer_no, timestamp)
-  max_rowid <- max(c(0,stream$rowid),na.rm=T)
-  
+
   rlang::inform(c(i = "windowing"))
   # window
   stream <- stream_window_features(stream, window_cols = window_cols, by = by, since = since, ...)
