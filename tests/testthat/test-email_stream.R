@@ -290,11 +290,13 @@ test_that("email_data clears any primary_key info", {
 
 email_stream_chunk <- NULL
 
-test_that("email_stream_chunk returns arrow table", {
+test_that("email_stream_chunk returns arrow table and outputs two", {
   tessilake::local_cache_dirs()
   email_stream_chunk <<- email_stream_chunk_stubbed()
   # returns an arrow table
   expect_class(email_stream_chunk,"ArrowTabular")
+  expect_gt(length(tessilake:::cache_files("email_stream_full","deep","stream")),0)
+  expect_gt(length(tessilake:::cache_files("email_stream","deep","stream")),0)
 })
 
 test_that("email_stream_chunk returns all rows with basic info",{
@@ -345,7 +347,6 @@ test_that("email_stream_chunk returns the same result when run with one or many 
   email_data <- email_stream_chunk %>% select(timestamp) %>% collect %>% setDT
   setkey(email_data,timestamp)
   email_data[,group := cut(seq(.N),breaks=5,labels=F)]
-
   purrr::imap(split(email_data,by="group"),
     \(group, i) {
         expr <- quote(email_stream_chunk_stubbed(from_date = group[,min(timestamp,na.rm=T)],
@@ -360,7 +361,7 @@ test_that("email_stream_chunk returns the same result when run with one or many 
 
   rows <- seq(1,by=100,length.out=1000)
 
-  email_stream <- read_cache("email_stream","stream") %>% collect %>% setDT %>%
+  email_stream <- read_cache("email_stream_full","stream") %>% collect %>% setDT %>%
     distinct %>%
     setkey(group_customer_no,timestamp_id,source_no,event_subtype,campaign_no,appeal_no)
   email_stream_expected <- email_stream_chunk %>% collect %>% setDT %>%

@@ -19,7 +19,6 @@ survey_stream_stubbed <- function(email_audit = stream_from_audit, reader = mock
 
 test_that("survey_find_column identifies the maximum column based on `.f`", {
   survey_stream <- data.table(x=rep(1,100),y=runif(100))
-  
   expect_equal(c("x"=1),survey_find_column(survey_stream,\(.).))
   expect_equal(c("y"=2),survey_find_column(survey_stream,\(.)-.))
 })
@@ -42,7 +41,7 @@ test_that("survey_monkey returns a data.table of survey data", {
     "More than one column found")
   
   expect_data_table(survey_data)
-  expect_names(colnames(survey_data),permutation.of=c("email","timestamp","question","subquestion","answer"))
+  expect_names(colnames(survey_data),permutation.of=c("email","timestamp","response_id","question","subquestion","answer"))
 })
 
 test_that("survey_monkey identifies emails and timestamp columns", {
@@ -86,11 +85,10 @@ test_that("survey_stream fills in customer number if it has been collected as a 
   stub(survey_stream,"anonymize",function(.).)
 
   expect_warning(survey_stream <- survey_stream(),"Found customer number question.+Customer number")
-  
   expect_equal(survey_stream[!customer_hash %in% stream_from_audit$customer_no,customer_hash],
                survey_data[question == "Customer number"] %>% 
                  .[survey_data[!email %in% stream_from_audit$address & question != "Customer number"],
-                   as.integer(answer),
+                   as.numeric(coalesce(answer,i.response_id)),
                    on="email"]
   )
 })
@@ -110,7 +108,7 @@ test_that("survey_stream returns a data.table", {
   expect_warning(survey_stream <- survey_stream(),"Found customer number question.+Customer number")
   
   expect_data_table(survey_stream)
-  expect_names(colnames(survey_stream), permutation.of=c("customer_hash","group_customer_hash","timestamp","survey","question","subquestion","answer","filename"))
+  expect_names(colnames(survey_stream), permutation.of=c("customer_hash","group_customer_hash","timestamp","response_id","survey","question","subquestion","answer","filename"))
   expect_equal(survey_stream$filename[1],rprojroot::find_testthat_root_file("survey_data/Audience_Survey_Spring_2024.xlsx"))
 })
 

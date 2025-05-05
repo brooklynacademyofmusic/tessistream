@@ -53,14 +53,19 @@ survey_stream <- function(survey_dir = config::get("tessistream")$survey_dir, re
   
   customer_no_question <- survey_stream %>% dcast(address+timestamp~question+subquestion,
                                                   value.var="answer", sep ="||") %>% 
-    survey_find_column(\(.) as.numeric(.) %in% as.integer(customers$customer_no) & !duplicated(.), criterion = .9*nrow(.)) %>% 
+    survey_find_column(\(.) as.numeric(.) %in% as.integer(customers$customer_no) &
+                            as.numeric(.) > year(today()), 
+                       criterion = .9*nrow(.)) %>% 
     names %>% strsplit("||",fixed = T)
 
   if (length(customer_no_question) > 0) {
     rlang::warn("Found customer number question, anonymizing:",body=c("*"=customer_no_question[[1]][[1]]))
     # fill in missing customer info
-    survey_stream[survey_stream[question == customer_no_question[[1]][[1]]], `:=`(customer_no=coalesce(customer_no,as.numeric(i.answer))), on = "address"]
+    survey_stream[survey_stream[question == customer_no_question[[1]][[1]]], 
+                  `:=`(customer_no=coalesce(customer_no,as.numeric(i.answer))), on = "address"]
   }
+  
+  survey_stream[, customer_no := coalesce(customer_no, as.numeric(response_id))]
 
   # and anonymize
   survey_stream[,`:=`(group_customer_hash = anonymize(group_customer_no),
@@ -115,7 +120,10 @@ survey_monkey <- function(file) {
 
   # find timestamp column
   timestamp_column <- survey_find_column(survey_data, \(.) between(as.numeric(.),40000,50000))
-
+  
+  # Response ID column
+  response_id_column <- survey_find_column(survey_data, \(.) as.numeric(.)>100000 & !duplicated(.))
+  
   # questions / sub-questions
   questions <- data.table(question = colnames(survey_data), # question is column name
                           subquestion = as.character(survey_data[1,]), # subquestion is first row
@@ -129,9 +137,9 @@ survey_monkey <- function(file) {
 
   # melt data
   survey_stream <- survey_data[-1,] %>%
-    melt(id.vars = c(email_column, timestamp_column),
+    melt(id.vars = c(email_column, timestamp_column, response_id_column),
          variable.name = "id", value.name = "answer") %>% left_join(questions, by="id")
-  setnames(survey_stream, as.character(c(email_column, timestamp_column)),c("email","timestamp"))
+  setnames(survey_stream, as.character(c(email_column, timestamp_column, response_id_column)),c("email","timestamp", "response_id"))
 
   survey_stream <- survey_stream[!is.na(answer)]
   survey_stream[,`:=`(id = NULL,

@@ -26,7 +26,7 @@ email_stream_base(from_date = as.POSIXct("1900-01-01"), to_date = now(), ...)
 
 email_stream_chunk(from_date = as.POSIXct("1900-01-01"), to_date = now(), ...)
 
-email_stream_write_partition(email_stream)
+email_stream_write_partition(email_stream, table_name = "email_stream_full")
 
 email_stream(from_date = as.POSIXct("1900-01-01"), to_date = now(), ...)
 }
@@ -42,6 +42,8 @@ email_stream(from_date = as.POSIXct("1900-01-01"), to_date = now(), ...)
 \item{to_date}{latest date/time for which data will be returned}
 
 \item{email_stream}{email data from previous step}
+
+\item{table_name}{\code{character(1)} name of the cache to write out}
 }
 \value{
 \link[arrow:Table-class]{arrow::Table} of email data
