@@ -103,6 +103,7 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
 #' @describeIn stream Fill down cols in `stream_cols` and add windowed features to `stream` for timestamps after `since`
 #' @importFrom checkmate assert_data_table assert_names assert_posixct assert_character assert_list
 #' @importFrom lubridate as_datetime
+#' @importFrom dplyr coalesce
 #' @param stream [data.table] data to process and write 
 #' @param fill_cols [character] columns to fill down 
 #' @param window_cols [character] columns to window
@@ -156,7 +157,7 @@ stream_chunk_write <- function(stream, fill_cols = setdiff(colnames(stream),
     
     max_rowid <- read_cache("stream","stream") %>% 
       filter(timestamp < as_datetime(since)) %>%
-      summarize(max(rowid)) %>% collect %>% as.numeric()
+      summarize(max(rowid)) %>% collect %>% as.numeric() %>% coalesce(0)
   }
   
   stream <- rbind(stream_prev,
