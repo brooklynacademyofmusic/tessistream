@@ -1,22 +1,6 @@
 withr::local_package("mockery")
 withr::local_package("checkmate")
 
-test_that("membership_stream returns features", {
-  stub(membership_stream, "stream_from_audit", 
-       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")))
-
-  expect_names(names(membership_stream()),
-               permutation.of = c("timestamp", "customer_no", "group_customer_no",
-                                  "event_type", "event_subtype", "event_subtype2",
-                                  "event_subtype3", "cust_memb_no", "cust_memb_no_prev",
-                                  "cust_memb_no_next", 
-                                  "membership_count", "membership_level", "membership_amt", 
-                                  "membership_start_timestamp_min",
-                                  "membership_start_timestamp_max",
-                                  "membership_end_timestamp_min",
-                                  "membership_end_timestamp_max")
-  )
-})
 
 
 # membership_tree ---------------------------------------------------------
@@ -67,4 +51,89 @@ test_that("membership_tree produces a sequence of memberships that crosses memb_
   expect_equal(membership_tree()[group_customer_no==1],expected,
                ignore_attr = "sorted",
                list_as_map = TRUE)
+})
+
+
+
+# stream_effective_date ---------------------------------------------------
+
+test_that("stream_effective_date returns input if target column is always less than or equal to timestamp", {
+  test <- data.table(timestamp = sample(seq(as_datetime("2000-01-01"),as_datetime("2100-01-01"),by="hour"),
+                                        size = 100,
+                                        replace = T)) %>% 
+    .[,target_dt := timestamp]
+
+  expect_equal(stream_effective_date(copy(test),"target_dt"),copy(test))
+  
+  test[,target_dt := timestamp - ddays(1)]
+  
+  expect_equal(stream_effective_date(copy(test),"target_dt"),copy(test))
+  
+  test[,target_dt := timestamp + ddays(1)]
+  
+  expect_failure(expect_equal(stream_effective_date(copy(test),"target_dt"),copy(test)))
+})
+
+test_that("stream_effective_date adjusts timestamp if target column is greater than timestamp", {
+  test <- data.table(timestamp = sample(seq(as_datetime("2000-01-01"),as_datetime("2100-01-01"),by="hour"),
+                                        size = 100,
+                                        replace = T)) %>% 
+    .[,target_dt := timestamp + ddays(1)]
+  
+  expect_equal(stream_effective_date(copy(test),"target_dt"),copy(test)[,timestamp := target_dt])
+})
+
+test_that("stream_effective_date returns one row per group", {
+  test <- data.table(timestamp = sample(seq(as_datetime("2000-01-01"),as_datetime("2100-01-01"),by="hour"),
+                                        size = 100,
+                                        replace = T)) %>% 
+    .[,`:=`(group = sample(letters,size=.N,replace=T),
+            target_dt = timestamp - ddays(1))]
+  
+  expect_equal(stream_effective_date(copy(test),"target_dt","group"),
+               setorderv(test[,lapply(.SD,min),by="group"],"group"))
+  
+  test[,target_dt := timestamp + ddays(1)]
+  
+  expect_equal(stream_effective_date(copy(test),"target_dt","group"),
+               setorderv(test[,.(timestamp = max(target_dt),
+                                 target_dt = max(target_dt)),by="group"],"group"))
+  
+})
+
+
+# membership_stream -------------------------------------------------------
+
+
+
+test_that("membership_stream returns features", {
+  stub(membership_stream, "stream_from_audit", 
+       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")) %>%
+         head(n = 1000))
+  
+  m <- membership_stream()
+  expect_names(names(m),
+               permutation.of = c("timestamp", "customer_no", "group_customer_no",
+                                  "event_type", "event_subtype", "event_subtype2",
+                                  "event_subtype3", "cust_memb_no", "cust_memb_no_prev",
+                                  "cust_memb_no_next", 
+                                  "membership_count", "membership_level", "membership_amt", 
+                                  "membership_start_timestamp_min",
+                                  "membership_start_timestamp_max",
+                                  "membership_end_timestamp_min",
+                                  "membership_end_timestamp_max")
+  )
+
+})
+
+test_that("membership_stream returns one start, one end and multiple controls", {
+  stub(membership_stream, "stream_from_audit", 
+       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")) %>%
+         head(n = 1000))
+  
+  m <- membership_stream()
+  
+  expect_equal(nrow(m[event_subtype == "Start"]),dplyr::n_distinct(m$cust_memb_no))
+  expect_equal(nrow(m[event_subtype == "End"]),dplyr::n_distinct(m$cust_memb_no))
+  expect_gte(nrow(m[event_subtype == "Control"]),dplyr::n_distinct(m$cust_memb_no)*48)
 })

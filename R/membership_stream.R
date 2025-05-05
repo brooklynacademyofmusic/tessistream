@@ -17,7 +17,7 @@
 #' * `event_subtype3`: Current or Lapsed
 #' * `cust_memb_no`: the membership with the closest start/end
 #' * `cust_memb_no_prev`, `cust_memb_no_next`: the previous/next membership in the same organization or 
-#'  outside of the organization if there are none in the organization
+#'  outside of the organization if there are no more in the organization
 #' * `membership_count`: integer, number of memberships a customer has had
 #' * `membership_level`: character, the current membership level
 #' * `membership_amt`: double, the total value of memberships a customer has had
@@ -28,7 +28,7 @@
 #' @return [arrow::Table] of membership data
 #' @export
 #' @importFrom lubridate parse_date_time
-membership_stream <- function() {
+membership_stream <- function(control_period = years(4)) {
   
   m <- stream_from_audit("memberships")
   date_cols <- c("init_dt","expr_dt")
@@ -42,36 +42,29 @@ membership_stream <- function() {
   
   setkey(m,cust_memb_no,timestamp)
   
-  starts <- m[m[init_dt != lag(init_dt) |
-                  event_subtype %in% c("Creation"),
-                .I, by="cust_memb_no"]$I,
-              .(timestamp = max(timestamp),
-                init_dt = max(init_dt)),
-              by="cust_memb_no"] %>% 
-    .[.(timestamp = pmax(timestamp,init_dt),
-        event_subtype = "Start",
-        cust_memb_no)]  
+  starts <- stream_effective_date(m, "init_dt", "cust_memb_no") %>% 
+    .[,.(timestamp, cust_memb_no, event_subtype = "Start")]
+  ends <- stream_effective_date(m, "expr_dt", "cust_memb_no") %>%
+    .[,.(timestamp, cust_memb_no, event_subtype = "End")]
   
-  ends <- m[m[expr_dt != lag(expr_dt) |
-                  event_subtype %in% c("Current"),
-                .I, by="cust_memb_no"]$I,
-            .(timestamp = max(timestamp),
-              expr_dt = max(expr_dt)),
-            by="cust_memb_no"] %>%
-    .[.(timestamp = pmax(timestamp,expr_dt),
-        event_subtype = "End",
-        cust_memb_no)]  
+  membership_stream <- rbind(starts,ends,fill=T) 
   
+  controls <- membership_stream[,.(timestamp = seq(min(timestamp),
+                                                   max(timestamp)+control_period,
+                                                   by="month"),
+                  event_subtype = "Control"),
+                by="cust_memb_no"]
   
+  membership_stream <- rbind(membership_stream,controls)
   
-  m <- m[event_subtype=="Current",
-         .(timestamp, customer_no, group_customer_no, cust_memb_no,
-            event_type = "Membership")] %>%
-    setleftjoin(starts, by = c("cust_memb_no")) %>% 
-    setleftjoin(ends, by = c("cust_memb_no"))
+  setleftjoin(membership_stream,
+              m[event_subtype == "Current",
+                  .(cust_memb_no, group_customer_no, customer_no)],
+                by = "cust_memb_no") %>% 
+    setleftjoin(membership_tree()) %>%
+    .[,`:=`(event_type = "Membership")]
   
-  #arrow::as_arrow_table(m)
-  
+  membership_stream
 }
 
 #' 
@@ -107,21 +100,31 @@ membership_tree <- function() {
 stream_effective_date <- function(stream, column, by = NULL) {
   assert_data_table(stream)
   assert_names(names(stream), must.include = c(column,by,"timestamp"))
-  assert_posixct(stream[,column,with=F])
+  assert_posixct(stream[[column]])
   
-  setkeyv(stream,c(by,"timestamp"))
+  if(is.null(by)) {
+    by = "_stream_effective_date_I"
+    stream[,(by) := .I]
+  }
   
-  stream[  
-    # not the first row of the group
-    get(by) == shift(get(by)) & 
+  setorderv(stream,c(by,"timestamp"))
+
+  out <- stream[stream[,  
     # column has changed
       get(column) != shift(get(column)) & 
     # column isn't effective yet
-      column >= timestamp | 
-    # or is the first row of the group
-      get(by) != shift(get(by)),
-    .(timestamp = pmax(timestamp, get(column)))] %>% 
-    .[,.(timestamp = max(timestamp)), by = by]
+      get(column) >= timestamp | 
+    # or is first in group
+      is.na(shift(get(column))), by = by]$V1,
+      .(timestamp = max(pmax(timestamp,get(column))),
+        column = max(get(column))), 
+    by = by] %>% setNames(c(by,"timestamp",column))
   
-  stream
+  if(by == "_stream_effective_date_I") {
+    stream[,(by) := NULL]
+    out[,(by) := NULL]
+  }
+  
+  out
+  
 }
