@@ -49,22 +49,33 @@ membership_stream <- function(control_period = years(4)) {
     .[,.(timestamp, cust_memb_no, event_subtype = "End")]
   
   membership_stream <- rbind(starts,ends,fill=T)[!is.na(timestamp)] 
+  setleftjoin(membership_stream,
+              membership_tree() %>% 
+                .[,.(cust_memb_no,cust_memb_no_prev,cust_memb_no_next,
+                     customer_no, group_customer_no,
+                     membership_level = memb_level,
+                     membership_amt = memb_amt)],
+              by = "cust_memb_no") 
   
   controls <- membership_stream[!is.na(timestamp),
                                 .(timestamp = seq(min(timestamp),
                                                   max(timestamp)+control_period,
                                                   by="month"),
+                                  min_timestamp = min(timestamp),
+                                  max_timestamp = max(timestamp),
+                                  customer_no = data.table::first(customer_no),
+                                  group_customer_no = data.table::first(group_customer_no),
                   event_subtype = "Control"),
-                by="cust_memb_no"]
+                by="cust_memb_no"] %>% 
+    .[floor_date(timestamp,"month") != floor_date(min_timestamp,"month") &
+      floor_date(timestamp,"month") != floor_date(max_timestamp,"month")]
   
-  setleftjoin(membership_stream,
-              membership_tree() %>% 
-                  .[,.(cust_memb_no,cust_memb_no_prev,cust_memb_no_next,
-                       customer_no, group_customer_no,
-                       membership_level = memb_level,
-                       membership_amt = memb_amt)],
-                by = "cust_memb_no") %>%
-    .[,`:=`(event_type = "Membership")]
+  controls <- controls[,month := floor_date(timestamp,"month")] %>% 
+    .[,I := seq_len(.N),by=list(group_customer_no,month)] %>% 
+    .[I == 1] %>%
+    .[,`:=`(month = NULL,
+            min_timestamp = NULL,
+            max_timestamp = NULL)]
   
   setkey(membership_stream,group_customer_no,timestamp)
   membership_stream[event_subtype == "Start",`:=`(
@@ -92,6 +103,7 @@ membership_stream <- function(control_period = years(4)) {
             cols = c("event_subtype2","event_subtype3",
                      grepv("membership",colnames(membership_stream))),
             by = "group_customer_no")
+  membership_stream[,event_type := "Membership"]
 }
 
 #' 

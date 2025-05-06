@@ -126,6 +126,9 @@ test_that("membership_stream returns features", {
                                   "membership_end_timestamp_max")
   )
 
+  expect_equal(m[,lapply(.SD,\(.) !any(is.na(.)))],
+               m[,lapply(.SD,\(.) T)])
+  
 })
 
 test_that("membership_stream returns one start, one end and multiple controls", {
@@ -141,3 +144,17 @@ test_that("membership_stream returns one start, one end and multiple controls", 
   expect_equal(nrow(m[event_subtype == "End"]),dplyr::n_distinct(m$cust_memb_no))
   expect_gte(nrow(m[event_subtype == "Control"]),dplyr::n_distinct(m$cust_memb_no)*48)
 })
+
+test_that("membership_stream has no more than one item per group_customer_no per month (usually!)", {
+  stub(membership_stream, "stream_from_audit", 
+       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")))
+  stub(membership_tree, "read_tessi",
+       readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")))
+  stub(membership_stream, "membership_tree", membership_tree)
+  
+  m <- membership_stream()
+  memberships <-  readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")) %>% setDT
+  
+  expect_equal(m[,.N,by=list(group_customer_no,floor_date(timestamp,"month"))][N>1,.N])
+})
+
