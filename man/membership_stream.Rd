@@ -4,7 +4,7 @@
 \alias{membership_stream}
 \title{membership_stream}
 \usage{
-membership_stream()
+membership_stream(control_period = years(4))
 }
 \value{
 \link[arrow:Table-class]{arrow::Table} of membership data
@@ -28,7 +28,7 @@ Features:
 \item \code{event_subtype3}: Current or Lapsed
 \item \code{cust_memb_no}: the membership with the closest start/end
 \item \code{cust_memb_no_prev}, \code{cust_memb_no_next}: the previous/next membership in the same organization or
-outside of the organization if there are none in the organization
+outside of the organization if there are no more in the organization
 \item \code{membership_count}: integer, number of memberships a customer has had
 \item \code{membership_level}: character, the current membership level
 \item \code{membership_amt}: double, the total value of memberships a customer has had

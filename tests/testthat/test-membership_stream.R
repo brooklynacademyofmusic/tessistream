@@ -108,8 +108,10 @@ test_that("stream_effective_date returns one row per group", {
 
 test_that("membership_stream returns features", {
   stub(membership_stream, "stream_from_audit", 
-       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")) %>%
-         head(n = 1000))
+       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")))
+  stub(membership_tree, "read_tessi",
+       readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")))
+  stub(membership_stream, "membership_tree", membership_tree)
   
   m <- membership_stream()
   expect_names(names(m),
@@ -128,8 +130,10 @@ test_that("membership_stream returns features", {
 
 test_that("membership_stream returns one start, one end and multiple controls", {
   stub(membership_stream, "stream_from_audit", 
-       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")) %>%
-         head(n = 1000))
+       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")))
+  stub(membership_tree, "read_tessi",
+       readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")))
+  stub(membership_stream, "membership_tree", membership_tree)
   
   m <- membership_stream()
   

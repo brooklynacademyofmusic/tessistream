@@ -28,6 +28,7 @@
 #' @return [arrow::Table] of membership data
 #' @export
 #' @importFrom lubridate parse_date_time
+#' @importFrom data.table frank
 membership_stream <- function(control_period = years(4)) {
   
   m <- stream_from_audit("memberships")
@@ -47,24 +48,50 @@ membership_stream <- function(control_period = years(4)) {
   ends <- stream_effective_date(m, "expr_dt", "cust_memb_no") %>%
     .[,.(timestamp, cust_memb_no, event_subtype = "End")]
   
-  membership_stream <- rbind(starts,ends,fill=T) 
+  membership_stream <- rbind(starts,ends,fill=T)[!is.na(timestamp)] 
   
-  controls <- membership_stream[,.(timestamp = seq(min(timestamp),
-                                                   max(timestamp)+control_period,
-                                                   by="month"),
+  controls <- membership_stream[!is.na(timestamp),
+                                .(timestamp = seq(min(timestamp),
+                                                  max(timestamp)+control_period,
+                                                  by="month"),
                   event_subtype = "Control"),
                 by="cust_memb_no"]
   
-  membership_stream <- rbind(membership_stream,controls)
-  
   setleftjoin(membership_stream,
-              m[event_subtype == "Current",
-                  .(cust_memb_no, group_customer_no, customer_no)],
-                by = "cust_memb_no") %>% 
-    setleftjoin(membership_tree()) %>%
+              membership_tree() %>% 
+                  .[,.(cust_memb_no,cust_memb_no_prev,cust_memb_no_next,
+                       customer_no, group_customer_no,
+                       membership_level = memb_level,
+                       membership_amt = memb_amt)],
+                by = "cust_memb_no") %>%
     .[,`:=`(event_type = "Membership")]
   
-  membership_stream
+  setkey(membership_stream,group_customer_no,timestamp)
+  membership_stream[event_subtype == "Start",`:=`(
+    membership_count = cumsum(!duplicated(cust_memb_no)),
+    membership_amt = cumsum(membership_amt),
+    membership_start_timestamp_min = min(timestamp),
+    membership_start_timestamp_max = timestamp
+  ),by = "group_customer_no"]
+  membership_stream[event_subtype == "End",`:=`(
+    membership_end_timestamp_min = min(timestamp),
+    membership_end_timestamp_max = timestamp
+  ),by = "group_customer_no"]
+  membership_stream[,`:=`(
+    event_subtype2 = case_when(seq_len(.N) == 1 ~ "New",
+                               event_subtype == "Start" & 
+                                 timestamp - membership_end_timestamp_max < ddays(1) ~ "Renew",
+                               event_subtype == "Start" ~ "Reinstate"),
+    event_subtype3 = (cumsum((event_subtype == "Start") - (event_subtype == "End")) > 0) %>% 
+      factor(levels = c(T,F), labels = c("Current","Lapsed"))),
+  by = "group_customer_no"]
+  
+  membership_stream <- rbind(membership_stream,controls,fill=T)
+  setkey(membership_stream,group_customer_no,timestamp)
+  setnafill(membership_stream, "locf", 
+            cols = c("event_subtype2","event_subtype3",
+                     grepv("membership",colnames(membership_stream))),
+            by = "group_customer_no")
 }
 
 #' 
