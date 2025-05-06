@@ -306,12 +306,28 @@ collective_access_prepare_fixtures <- function() {
 # membership_stream -------------------------------------------------------
 
 
-membership_stream_prepare_fixtures <- function() {
-  m <- stream_from_audit("memberships")
+membership_stream_prepare_fixtures <- function(n = 1000) {
+  . <- cust_memb_no <- NULL
+  
+  withr::local_envvar(R_CONFIG_FILE="")
   
   anonymized <- c("group_customer_no","customer_no","cust_memb_no")
+
+  m <- stream_from_audit("memberships")
+  m_sample <- m[,sample(unique(cust_memb_no),size=n)]
+  
   m[,(anonymized) := lapply(.SD,data.table::frank,ties.method="dense"), 
     .SDcols = anonymized]
   
-  saveRDS(m,rprojroot::find_testthat_root_file("membership_stream.Rds"))
+  m[cust_memb_no %in% m_sample] %>% 
+    saveRDS(rprojroot::find_testthat_root_file("membership_stream.Rds"))
+  
+  m <- read_tessi("memberships") %>% collect %>% setDT
+  
+  m[,(anonymized) := lapply(.SD,data.table::frank,ties.method="dense"), 
+    .SDcols = anonymized]
+  
+  m[cust_memb_no %in% m_sample] %>% 
+    saveRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds"))
+  
 }
