@@ -152,9 +152,9 @@ test_that("membership_stream returns one start, one end and multiple controls", 
   
   m <- membership_stream()
   
-  expect_equal(nrow(m[event_subtype == "Start"]),dplyr::n_distinct(m$cust_memb_no))
-  expect_equal(nrow(m[event_subtype == "End"]),dplyr::n_distinct(m$cust_memb_no))
-  expect_gte(nrow(m[event_subtype == "Control"]),dplyr::n_distinct(m$cust_memb_no)*48)
+  expect_equal(nrow(m[event_subtype == "Start"]),m[event_subtype %in% c("Start","End"),dplyr::n_distinct(cust_memb_no)])
+  expect_equal(nrow(m[event_subtype == "End"]),m[event_subtype %in% c("Start","End"),dplyr::n_distinct(cust_memb_no)])
+  expect_gte(nrow(m[event_subtype == "Control"]),m[,dplyr::n_distinct(cust_memb_no)]*48)
 })
 
 test_that("membership_stream has no more than one item per group_customer_no per month (usually!)", {
