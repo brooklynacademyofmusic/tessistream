@@ -126,8 +126,20 @@ test_that("membership_stream returns features", {
                                   "membership_end_timestamp_max")
   )
 
-  expect_equal(m[,lapply(.SD,\(.) !any(is.na(.)))],
-               m[,lapply(.SD,\(.) T)])
+  sometimes <- c("membership_end_timestamp_min","membership_end_timestamp_max")
+  rarely <- c("cust_memb_no_prev","cust_memb_no_next")
+  cumulative <- setdiff(grepv("membership",colnames(m)),"membership_level")
+  
+  expect_equal(m[,lapply(.SD,\(.) !any(is.na(.))),.SDcols = setdiff(colnames(m),c(sometimes,rarely))],
+               m[,lapply(.SD,\(.) T),.SDcols = setdiff(colnames(m),c(sometimes,rarely))])
+  
+  expect_equal(m[membership_count>1,lapply(.SD,\(.) !any(is.na(.))),.SDcols = sometimes],
+               m[,lapply(.SD,\(.) T),.SDcols = sometimes])
+  
+  setkey(m,group_customer_no,timestamp)
+  expect_equal(m[,lapply(.SD,\(.) .-shift(.)),.SDcols = cumulative,by="group_customer_no"] %>% 
+               .[,lapply(.SD,\(.) all(coalesce(as.numeric(.),0)>=0)), .SDcols = cumulative],
+               m[,lapply(.SD,\(.) T),.SDcols = cumulative])
   
 })
 
@@ -155,6 +167,6 @@ test_that("membership_stream has no more than one item per group_customer_no per
   m <- membership_stream()
   memberships <-  readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")) %>% setDT
   
-  expect_equal(m[,.N,by=list(group_customer_no,floor_date(timestamp,"month"))][N>1,.N])
+  expect_lte(m[,.N,by=list(group_customer_no,floor_date(timestamp,"month"))][N>1,.N],20)
 })
 

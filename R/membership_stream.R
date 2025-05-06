@@ -49,12 +49,13 @@ membership_stream <- function(control_period = years(4)) {
     .[,.(timestamp, cust_memb_no, event_subtype = "End")]
   
   membership_stream <- rbind(starts,ends,fill=T)[!is.na(timestamp)] 
+  membership_tree <- membership_tree()
   setleftjoin(membership_stream,
-              membership_tree() %>% 
-                .[,.(cust_memb_no,cust_memb_no_prev,cust_memb_no_next,
+              membership_tree[,.(cust_memb_no,
                      customer_no, group_customer_no,
+                     cust_memb_no_next,cust_memb_no_prev,
                      membership_level = memb_level,
-                     membership_amt = memb_amt)],
+                     memb_amt)],
               by = "cust_memb_no") 
   
   controls <- membership_stream[!is.na(timestamp),
@@ -70,17 +71,26 @@ membership_stream <- function(control_period = years(4)) {
     .[floor_date(timestamp,"month") != floor_date(min_timestamp,"month") &
       floor_date(timestamp,"month") != floor_date(max_timestamp,"month")]
   
+  # Remove duplicated controls
   controls <- controls[,month := floor_date(timestamp,"month")] %>% 
     .[,I := seq_len(.N),by=list(group_customer_no,month)] %>% 
-    .[I == 1] %>%
+    .[I == 1] 
+  
+  controls <- membership_tree[,.(cust_memb_no,cust_memb_no_next,cust_memb_no_prev,
+                                 expr_dt,group_customer_no)] %>% 
+    .[controls,on = c("group_customer_no","expr_dt" = "timestamp"),
+      roll = "nearest"] %>% 
     .[,`:=`(month = NULL,
             min_timestamp = NULL,
-            max_timestamp = NULL)]
+            max_timestamp = NULL,
+            timestamp = expr_dt,
+            expr_dt = NULL,
+            i.cust_memb_no = NULL)]
   
   setkey(membership_stream,group_customer_no,timestamp)
   membership_stream[event_subtype == "Start",`:=`(
     membership_count = cumsum(!duplicated(cust_memb_no)),
-    membership_amt = cumsum(membership_amt),
+    membership_amt = cumsum(memb_amt),
     membership_start_timestamp_min = min(timestamp),
     membership_start_timestamp_max = timestamp
   ),by = "group_customer_no"]
@@ -96,6 +106,7 @@ membership_stream <- function(control_period = years(4)) {
     event_subtype3 = (cumsum((event_subtype == "Start") - (event_subtype == "End")) > 0) %>% 
       factor(levels = c(T,F), labels = c("Current","Lapsed"))),
   by = "group_customer_no"]
+  membership_stream$memb_amt <- NULL
   
   membership_stream <- rbind(membership_stream,controls,fill=T)
   setkey(membership_stream,group_customer_no,timestamp)
@@ -103,6 +114,7 @@ membership_stream <- function(control_period = years(4)) {
             cols = c("event_subtype2","event_subtype3",
                      grepv("membership",colnames(membership_stream))),
             by = "group_customer_no")
+ 
   membership_stream[,event_type := "Membership"]
 }
 
