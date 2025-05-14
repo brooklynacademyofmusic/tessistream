@@ -39,8 +39,8 @@ address_clean <- function(address_col, pattern = "^(web add|unknown|no add)|^$")
 address_normalize <- function(address_stream) {
   query <- formatted_address <- matched_address <- geometry.location_type <- street1_cleaned <- libpostal.house_number <-
     libpostal.road <- libpostal.city <- libpostal.state <- libpostal.postcode <- libpostal.country <- libpostal.po_box <- 
-    libpostal.unit <- libpostal.house <- street2_cleaned <- country_cleaned <-
-    street1 <- city <- state <- postal_code <- country <- NULL
+    libpostal.unit <- libpostal.house <- street2_cleaned <- state_cleaned <- country_cleaned <-
+    street1 <- street2 <- city <- state <- postal_code <- country <- NULL
 
   assert_data_table(address_stream)
   assert_names(colnames(address_stream), must.include = address_cols)
@@ -120,7 +120,8 @@ address_normalize <- function(address_stream) {
 #' @importFrom data.table copy
 street_cleaner <- function(list_no) {
   . <- customer_no <- esal1_desc <- esal2_desc <- lsal_desc <- business_title <- primary_ind <-
-    timestamp <- street1_cleaned <- street2_cleaned <- street2 <- repeated_word <- N <- possible_duplicate <- NULL
+    timestamp <- street1_cleaned <- street2_cleaned <- street2 <- repeated_word <- 
+    event_subtype <- N <- possible_duplicate <- NULL
 
   list <- read_sql(paste("select * from T_LIST_CONTENTS where list_no=",list_no)) %>%
     collect %>% setDT

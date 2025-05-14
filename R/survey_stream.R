@@ -32,7 +32,7 @@
 #' @export
 survey_stream <- function(survey_dir = config::get("tessistream")$survey_dir, reader = survey_monkey) {
   . <- survey <- filename <- address <- customer_no <- group_customer_no <- primary_ind <- 
-    timestamp <- question <- i.answer <- NULL
+    timestamp <- question <- i.answer <- N <- response_id <- NULL
     
   files <- dir(survey_dir,full.names=T,recursive=T) %>% setNames(.,.)
 

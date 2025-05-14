@@ -171,6 +171,8 @@ contribution_stream_prepare_fixtures <- function() {
 duplicates_prepare_fixtures <- function() {
   withr::local_envvar(R_CONFIG_FILE="")
 
+  . <- fname <- lname <- group_customer_no <- customer_no <- NULL
+  
   address_stream <- readRDS(rprojroot::find_testthat_root_file("address_stream.Rds"))
 
   customers <- read_tessi("customers", select = c("cust_type_desc", "inactive_desc", "fname", "lname", "customer_no")) %>%
@@ -287,8 +289,10 @@ p2_prepare_fixtures <- function() {
 # collective_access_stream ------------------------------------------------
 
 collective_access_prepare_fixtures <- function() {
-  #base_url <- config::get("tessistream")$collective_access_base_url
-  #login <- config::get("tessistream")$collective_access_login
+  withr::local_envvar(R_CONFIG_FILE="")
+  
+  base_url <- config::get("tessistream")$collective_access_base_url
+  login <- config::get("tessistream")$collective_access_login
   
   POST(file.path(base_url,"find","ca_occurrences"),
        query = list(q = "ca_occurrences.preferred_labels:Einstein on the Beach", 

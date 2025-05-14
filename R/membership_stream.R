@@ -31,6 +31,11 @@
 #' @importFrom data.table frank
 membership_stream <- function(control_period = years(4)) {
   
+  . <- action <- memb_level <- cust_memb_no <- timestamp <- customer_no <- 
+    group_customer_no <- cust_memb_no_next <- cust_memb_no_prev <- memb_amt <- 
+    min_timestamp <- max_timestamp <- month <- expr_dt <- event_subtype <- 
+    event_type <- NULL
+  
   m <- stream_from_audit("memberships")
   date_cols <- c("init_dt","expr_dt")
   m[, (date_cols) := lapply(.SD, parse_date_time, 
@@ -125,6 +130,8 @@ membership_stream <- function(control_period = years(4)) {
 #' 
 #' @importFrom data.table shift
 membership_tree <- function() {
+  group_customer_no <- init_dt <- cust_memb_no <- NULL
+  
   m <- read_tessi("memberships") %>% collect %>% setDT
   setkey(m,group_customer_no,init_dt)  
   
@@ -156,6 +163,8 @@ stream_effective_date <- function(stream, column, by = NULL) {
   assert_data_table(stream)
   assert_names(names(stream), must.include = c(column,by,"timestamp"))
   assert_posixct(stream[[column]])
+  
+  timestamp <- NULL
   
   if(is.null(by)) {
     by = "_stream_effective_date_I"
