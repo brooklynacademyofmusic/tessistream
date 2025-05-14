@@ -102,6 +102,8 @@ setnafill_const_simple <- function(x, type = "const", fill = NA, cols = seq_alon
 #' @importFrom stats na.omit
 #' @importFrom data.table setkey
 setnafill_group <- function(x, type = "locf", cols = seq_along(x), by = NA) {
+  . <- NULL
+  
   x[, I := .I]
   setkey(x, I)
   roll <- ifelse(type == "locf", Inf, -Inf)
@@ -230,6 +232,10 @@ stream_from_audit <- function(table_name, cols = NULL, ...) {
               last_updated_by) %>%
     collect() %>%
     setDT()
+  
+  # convert audited columns to character to match audit table
+  stream_cols <- intersect(cols,colnames(stream_current))
+  stream_current[,(stream_cols) := lapply(.SD,as.character), .SDcols = stream_cols]
 
   setkey(audit, timestamp)
 
@@ -316,7 +322,7 @@ setunite <- function(data, col, ..., sep = "_", remove = TRUE, na.rm = FALSE) {
 #' @importFrom dplyr filter select collect all_of semi_join
 #' @importFrom checkmate assert_names
 stream_customer_history <- function(stream, by, before = as.POSIXct("2100-01-01"), pattern = ".", ...) {
-  timestamp <- NULL
+  timestamp <- timestamp_id <- NULL
   assert_names(names(stream), must.include = c("timestamp", by))
 
   stream <- stream %>% filter(timestamp < before) %>% 

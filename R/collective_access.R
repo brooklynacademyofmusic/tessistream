@@ -37,6 +37,8 @@ collective_access_stream <- function(ca_table,
                       login = config::get("tessistream")$collective_access_login, 
                       batch_size = 100L,
                       ...) {
+  . <- id <- NULL
+  
   assert_list(features, names = "named")
   
   # extract all the bundles from the featureset
@@ -125,6 +127,8 @@ collective_access_login <- function(login, base_url) {
 #' @importFrom httr POST
 #' @importFrom rlang abort
 collective_access_search <- function(ca_table, query, base_url, login, bundles = NULL) {
+  . <- NULL
+  
   res <- POST(file.path(base_url,"find",ca_table),
              query = list(q = query, authToken = collective_access_login(base_url = base_url, login = login)),
              body = list(bundles = bundles),

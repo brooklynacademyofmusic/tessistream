@@ -347,10 +347,11 @@ p2_load <- function(table, offset = NULL, max_len = NULL,
 #' @return data.table of a mapping between email addresses and customer numbers
 #' @export
 #' @importFrom dplyr distinct select transmute
-#' @importFrom data.table setDT
+#' @importFrom data.table setDT first
 p2_email_map <- function() {
 
-  primary_ind <- address <- customer_no <- . <- email <- id <- value <- contact <- i.customer_no <- group_customer_no <- i.group_customer_no <- NULL
+  primary_ind <- address <- customer_no <- . <- email <- id <- value <- 
+    contact <- i.customer_no <- group_customer_no <- i.group_customer_no <- NULL
 
   # load data
   emails <- tessilake::read_tessi("emails",freshness = 0) %>%

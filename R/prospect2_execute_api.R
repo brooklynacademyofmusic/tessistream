@@ -35,7 +35,7 @@ p2_verb_thing <- function(existing_things, new_things = NULL,
                           verb, thing,
                           dry_run = FALSE,
                           .name = thing) {
-  . <- name <- id <- NULL
+  . <- name <- id <- object <- NULL
 
   assert_character(existing_things)
   if(is.null(new_things)) {

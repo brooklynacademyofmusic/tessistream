@@ -35,7 +35,7 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
                                     lubridate::period,
                                     units = "day"), ...) {
   
-  . <- timestamp
+  . <- timestamp <- NULL
   
   assert_character(streams,min.len = 1)
   assert_character(fill_match,len=1)
@@ -117,7 +117,7 @@ stream_chunk_write <- function(stream, fill_cols = setdiff(colnames(stream),
                                incremental = TRUE,
                                ...) {
   
-  timestamp <- group_customer_no <- NULL
+  timestamp <- group_customer_no <- rowid <- NULL
   
   assert_data_table(stream)
   assert_names(colnames(stream), must.include = c(by,"timestamp", fill_cols))
@@ -198,7 +198,7 @@ stream_window_features <- function(stream, window_cols = setdiff(colnames(stream
                                    since = min(stream$timestamp),
                                    windows = NULL, by = "group_customer_no", ...) {
   
-  timestamp <- NULL
+  . <- timestamp <- group_customer_no <- NULL
   
   assert_data_table(stream)
   assert_names(colnames(stream), must.include = c(by, "timestamp",window_cols))

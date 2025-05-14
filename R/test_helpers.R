@@ -171,6 +171,8 @@ contribution_stream_prepare_fixtures <- function() {
 duplicates_prepare_fixtures <- function() {
   withr::local_envvar(R_CONFIG_FILE="")
 
+  . <- fname <- lname <- group_customer_no <- customer_no <- NULL
+  
   address_stream <- readRDS(rprojroot::find_testthat_root_file("address_stream.Rds"))
 
   customers <- read_tessi("customers", select = c("cust_type_desc", "inactive_desc", "fname", "lname", "customer_no")) %>%
@@ -287,8 +289,10 @@ p2_prepare_fixtures <- function() {
 # collective_access_stream ------------------------------------------------
 
 collective_access_prepare_fixtures <- function() {
-  #base_url <- config::get("tessistream")$collective_access_base_url
-  #login <- config::get("tessistream")$collective_access_login
+  withr::local_envvar(R_CONFIG_FILE="")
+  
+  base_url <- config::get("tessistream")$collective_access_base_url
+  login <- config::get("tessistream")$collective_access_login
   
   POST(file.path(base_url,"find","ca_occurrences"),
        query = list(q = "ca_occurrences.preferred_labels:Einstein on the Beach", 
@@ -300,4 +304,34 @@ collective_access_prepare_fixtures <- function() {
       rprojroot::find_testthat_root_file("collective_access-search.Rds")
     )
 
+}
+
+
+# membership_stream -------------------------------------------------------
+
+
+membership_stream_prepare_fixtures <- function(n = 1000) {
+  . <- cust_memb_no <- NULL
+  
+  withr::local_envvar(R_CONFIG_FILE="")
+  
+  anonymized <- c("group_customer_no","customer_no","cust_memb_no")
+
+  m <- stream_from_audit("memberships")
+  m_sample <- m[,sample(unique(cust_memb_no),size=n)]
+  
+  m[,(anonymized) := lapply(.SD,data.table::frank,ties.method="dense"), 
+    .SDcols = anonymized]
+  
+  m[cust_memb_no %in% m_sample] %>% 
+    saveRDS(rprojroot::find_testthat_root_file("membership_stream.Rds"))
+  
+  m <- read_tessi("memberships") %>% collect %>% setDT
+  
+  m[,(anonymized) := lapply(.SD,data.table::frank,ties.method="dense"), 
+    .SDcols = anonymized]
+  
+  m[cust_memb_no %in% m_sample] %>% 
+    saveRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds"))
+  
 }

@@ -312,7 +312,7 @@ email_stream_base <- function(from_date = as.POSIXct("1900-01-01"), to_date = no
 #' @param from_date earliest date/time for which data will be returned
 #' @param to_date latest date/time for which data will be returned
 email_stream_chunk <- function(from_date = as.POSIXct("1900-01-01"), to_date = now(), ...) {
-  campaignid <- timestamp <- NULL
+  campaignid <- timestamp <- event_subtype <- NULL
 
   assert_posixct(c(from_date, to_date), sorted = TRUE)
 
