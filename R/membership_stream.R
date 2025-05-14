@@ -89,15 +89,16 @@ membership_stream <- function(control_period = years(4)) {
     .[I == 1] 
 
   # use initiation times to add membership data to controls  
-  controls <- membership_tree[,.(cust_memb_no,cust_memb_no_next,cust_memb_no_prev,
-                                 expr_dt,group_customer_no)] %>% 
+  controls <- membership_stream[event_subtype=="Start",
+                                .(cust_memb_no,cust_memb_no_next,cust_memb_no_prev,
+                                 init_dt = timestamp,group_customer_no)] %>% 
     .[controls,on = c("group_customer_no","init_dt" = "timestamp"),
       roll = Inf] %>% 
     .[,`:=`(month = NULL,
             min_timestamp = NULL,
             max_timestamp = NULL,
-            timestamp = expr_dt,
-            expr_dt = NULL,
+            timestamp = init_dt,
+            init_dt = NULL,
             i.cust_memb_no = NULL)]
   
   # build features by customer
