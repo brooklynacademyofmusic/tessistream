@@ -112,6 +112,7 @@ test_that("membership_stream returns features", {
   stub(membership_tree, "read_tessi",
        readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")))
   stub(membership_stream, "membership_tree", membership_tree)
+  stub(membership_stream, "write_cache", NULL)
   
   m <- membership_stream()
   expect_names(names(m),
@@ -149,6 +150,7 @@ test_that("membership_stream returns one start, one end and multiple controls", 
   stub(membership_tree, "read_tessi",
        readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")))
   stub(membership_stream, "membership_tree", membership_tree)
+  stub(membership_stream, "write_cache", NULL)
   
   m <- membership_stream()
   
@@ -163,6 +165,7 @@ test_that("membership_stream has no more than one item per group_customer_no per
   stub(membership_tree, "read_tessi",
        readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")))
   stub(membership_stream, "membership_tree", membership_tree)
+  stub(membership_stream, "write_cache", NULL)
   
   m <- membership_stream()
   memberships <-  readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")) %>% setDT
@@ -170,3 +173,17 @@ test_that("membership_stream has no more than one item per group_customer_no per
   expect_lte(m[,.N,by=list(group_customer_no,floor_date(timestamp,"month"))][N>1,.N],20)
 })
 
+test_that("membership_stream writes out a dataset", {
+  stub(membership_stream, "stream_from_audit", 
+       readRDS(rprojroot::find_testthat_root_file("membership_stream.Rds")))
+  stub(membership_tree, "read_tessi",
+       readRDS(rprojroot::find_testthat_root_file("membership_stream-memberships.Rds")))
+  stub(membership_stream, "membership_tree", membership_tree)
+  write_cache <- mock()
+  stub(membership_stream, "write_cache", write_cache)
+  
+  m <- membership_stream()
+  
+  expect_length(mock_args(write_cache),1)
+  
+})

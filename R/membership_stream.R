@@ -116,6 +116,10 @@ membership_stream <- function(control_period = years(4)) {
             by = "group_customer_no")
  
   membership_stream[,event_type := "Membership"]
+  
+  write_cache(membership_stream, "membership_stream", "stream", overwrite = T)
+  
+  membership_stream
 }
 
 #' 
