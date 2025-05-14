@@ -25,6 +25,9 @@
 #' `membership_end_timestamp_min`, `membership_end_timestamp_max`: the first/last timestamp of a 
 #' membership start/end
 #'
+#' @param control_period duration after the expiration of a membership to continue adding 
+#' control events for analysis
+#'
 #' @return [arrow::Table] of membership data
 #' @export
 #' @importFrom lubridate parse_date_time
@@ -43,16 +46,18 @@ membership_stream <- function(control_period = years(4)) {
     .SDcols = date_cols]
   
   m <- m[is.na(action) | !grepl("deleted",action,ignore.case=T)]
-  # remove the added expiration dates
+  # remove the expiration dates added to level names
   m[, memb_level := gsub(" .+","",memb_level)]
   
   setkey(m,cust_memb_no,timestamp)
   
+  # calculate effective starts and ends
   starts <- stream_effective_date(m, "init_dt", "cust_memb_no") %>% 
     .[,.(timestamp, cust_memb_no, event_subtype = "Start")]
   ends <- stream_effective_date(m, "expr_dt", "cust_memb_no") %>%
     .[,.(timestamp, cust_memb_no, event_subtype = "End")]
   
+  # build the initial membership stream from starts/ends and tree information
   membership_stream <- rbind(starts,ends,fill=T)[!is.na(timestamp)] 
   membership_tree <- membership_tree()
   setleftjoin(membership_stream,
@@ -63,6 +68,7 @@ membership_stream <- function(control_period = years(4)) {
                      memb_amt)],
               by = "cust_memb_no") 
   
+  # build membership controls
   controls <- membership_stream[!is.na(timestamp),
                                 .(timestamp = seq(min(timestamp),
                                                   max(timestamp)+control_period,
@@ -73,6 +79,7 @@ membership_stream <- function(control_period = years(4)) {
                                   group_customer_no = data.table::first(group_customer_no),
                   event_subtype = "Control"),
                 by="cust_memb_no"] %>% 
+    # remove controls duplicated by endpoints
     .[floor_date(timestamp,"month") != floor_date(min_timestamp,"month") &
       floor_date(timestamp,"month") != floor_date(max_timestamp,"month")]
   
@@ -80,11 +87,12 @@ membership_stream <- function(control_period = years(4)) {
   controls <- controls[,month := floor_date(timestamp,"month")] %>% 
     .[,I := seq_len(.N),by=list(group_customer_no,month)] %>% 
     .[I == 1] 
-  
+
+  # use initiation times to add membership data to controls  
   controls <- membership_tree[,.(cust_memb_no,cust_memb_no_next,cust_memb_no_prev,
                                  expr_dt,group_customer_no)] %>% 
-    .[controls,on = c("group_customer_no","expr_dt" = "timestamp"),
-      roll = "nearest"] %>% 
+    .[controls,on = c("group_customer_no","init_dt" = "timestamp"),
+      roll = Inf] %>% 
     .[,`:=`(month = NULL,
             min_timestamp = NULL,
             max_timestamp = NULL,
@@ -92,6 +100,7 @@ membership_stream <- function(control_period = years(4)) {
             expr_dt = NULL,
             i.cust_memb_no = NULL)]
   
+  # build features by customer
   setkey(membership_stream,group_customer_no,timestamp)
   membership_stream[event_subtype == "Start",`:=`(
     membership_count = cumsum(!duplicated(cust_memb_no)),
@@ -113,7 +122,10 @@ membership_stream <- function(control_period = years(4)) {
   by = "group_customer_no"]
   membership_stream$memb_amt <- NULL
   
+  # add in controls
   membership_stream <- rbind(membership_stream,controls,fill=T)
+  
+  # fill down all features
   setkey(membership_stream,group_customer_no,timestamp)
   setnafill(membership_stream, "locf", 
             cols = c("event_subtype2","event_subtype3",
@@ -122,6 +134,7 @@ membership_stream <- function(control_period = years(4)) {
  
   membership_stream[,event_type := "Membership"]
   
+  # write it out
   write_cache(membership_stream, "membership_stream", "stream", overwrite = T)
   
   membership_stream

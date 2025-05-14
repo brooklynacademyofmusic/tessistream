@@ -6,6 +6,10 @@
 \usage{
 membership_stream(control_period = years(4))
 }
+\arguments{
+\item{control_period}{duration after the expiration of a membership to continue adding
+control events for analysis}
+}
 \value{
 \link[arrow:Table-class]{arrow::Table} of membership data
 }
