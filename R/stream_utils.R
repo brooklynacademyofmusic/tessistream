@@ -102,6 +102,8 @@ setnafill_const_simple <- function(x, type = "const", fill = NA, cols = seq_alon
 #' @importFrom stats na.omit
 #' @importFrom data.table setkey
 setnafill_group <- function(x, type = "locf", cols = seq_along(x), by = NA) {
+  . <- NULL
+  
   x[, I := .I]
   setkey(x, I)
   roll <- ifelse(type == "locf", Inf, -Inf)
