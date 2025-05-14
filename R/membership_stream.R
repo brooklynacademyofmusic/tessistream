@@ -36,7 +36,7 @@ membership_stream <- function(control_period = years(4)) {
   
   . <- action <- memb_level <- cust_memb_no <- timestamp <- customer_no <- 
     group_customer_no <- cust_memb_no_next <- cust_memb_no_prev <- memb_amt <- 
-    min_timestamp <- max_timestamp <- month <- expr_dt <- event_subtype <- 
+    min_timestamp <- max_timestamp <- month <- init_dt <- expr_dt <- event_subtype <- 
     event_type <- NULL
   
   m <- stream_from_audit("memberships")
@@ -178,7 +178,7 @@ stream_effective_date <- function(stream, column, by = NULL) {
   assert_names(names(stream), must.include = c(column,by,"timestamp"))
   assert_posixct(stream[[column]])
   
-  timestamp <- NULL
+  . <- timestamp <- NULL
   
   if(is.null(by)) {
     by = "_stream_effective_date_I"
