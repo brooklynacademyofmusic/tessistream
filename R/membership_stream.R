@@ -130,7 +130,8 @@ membership_stream <- function(control_period = years(4)) {
   setkey(membership_stream,group_customer_no,timestamp)
   setnafill(membership_stream, "locf", 
             cols = c("event_subtype2","event_subtype3",
-                     grepv("membership",colnames(membership_stream))),
+                     grep("membership",colnames(membership_stream),
+                          value = TRUE)),
             by = "group_customer_no")
  
   membership_stream[,event_type := "Membership"]
