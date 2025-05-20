@@ -11,15 +11,16 @@
 #' @param fill_match [character](1) regular expression to use when matching columns to fill down 
 #' @param window_match [character](1) regular expression to use when matching columns to window
 #' @param since [POSIXct](1) date after which to build the stream
+#' @param until [POSIXct](1) date until which to build the stream
 #' @param rebuild [logical](1) whether or not to rebuild the whole dataset (`TRUE`) or just append to the end of it (`FALSE`)
 #' @param incremental [logical](1) whether or not to update the cache incrementally. Can require huge amounts of memory (approximately double the total dataset size to be appended).
-#' @param chunk_size [integer](1) number of rows to include in each partition of the dataset
 #' @importFrom data.table setDT
 #' @importFrom dplyr collect filter transmute
 #' @importFrom tessilake read_cache cache_exists_any write_cache sync_cache
 #' @importFrom checkmate assert_character assert_logical assert_list
 #' @importFrom lubridate as_datetime now years
 #' @param ... not used
+#' @param windows 
 #'
 #' @return stream dataset as an [arrow::Table]
 #' @export
@@ -27,9 +28,9 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
                                 "membership_stream","ticket_future_stream","address_stream"),
                    fill_match = "^(email|ticket|contribution|membership|ticket|address).+(amt|level|count|max|min|last)",
                    window_match = "^(email|ticket|contribution|membership|ticket|address).+(count|amt)$",
-                   chunk_size = 10e6,
                    rebuild = FALSE, 
                    since = now() - dyears(),
+                   until = now() + dyears(10),
                    incremental = !rebuild, 
                    windows = lapply(c(1,7,30,90,365),
                                     lubridate::period,
@@ -58,10 +59,12 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
   }
     
   partitions <- lapply(streams, \(stream) 
-                       filter(stream, timestamp > stream_max_date) %>% 
-                         group_by(partition = as_datetime(floor_date(timestamp,"year"))) %>% 
+                       filter(stream, timestamp > stream_max_date &
+                                      timestamp < until) %>% 
+                         group_by(partition = floor_date(timestamp,"year")) %>% 
                          summarize %>% 
-                         collect) %>% 
+                         collect %>% 
+                         mutate(partition = as_datetime(partition))) %>%
     rbindlist %>% distinct %>% .[!is.na(partition)]
 
   setkey(partitions,partition)
