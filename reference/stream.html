@@ -61,9 +61,9 @@ existing cache if <code>incremental</code> is <code>TRUE</code> (default: <code>
 <span>  fill_match <span class="op">=</span></span>
 <span>    <span class="st">"^(email|ticket|contribution|membership|ticket|address).+(amt|level|count|max|min|last)"</span>,</span>
 <span>  window_match <span class="op">=</span> <span class="st">"^(email|ticket|contribution|membership|ticket|address).+(count|amt)$"</span>,</span>
-<span>  chunk_size <span class="op">=</span> <span class="fl">1e+07</span>,</span>
 <span>  rebuild <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  since <span class="op">=</span> <span class="fu">now</span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fu">dyears</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  until <span class="op">=</span> <span class="fu">now</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">dyears</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span>,</span>
 <span>  incremental <span class="op">=</span> <span class="op">!</span><span class="va">rebuild</span>,</span>
 <span>  windows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">7</span>, <span class="fl">30</span>, <span class="fl">90</span>, <span class="fl">365</span><span class="op">)</span>, <span class="fu">lubridate</span><span class="fu">::</span><span class="va"><a href="https://lubridate.tidyverse.org/reference/period.html" class="external-link">period</a></span>, units <span class="op">=</span> <span class="st">"day"</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -105,16 +105,16 @@ existing cache if <code>incremental</code> is <code>TRUE</code> (default: <code>
 <dd><p><a href="1">character</a> regular expression to use when matching columns to window</p></dd>
 
 
-<dt id="arg-chunk-size">chunk_size<a class="anchor" aria-label="anchor" href="#arg-chunk-size"></a></dt>
-<dd><p><a href="1">integer</a> number of rows to include in each partition of the dataset</p></dd>
-
-
 <dt id="arg-rebuild">rebuild<a class="anchor" aria-label="anchor" href="#arg-rebuild"></a></dt>
 <dd><p><a href="1">logical</a> whether or not to rebuild the whole dataset (<code>TRUE</code>) or just append to the end of it (<code>FALSE</code>)</p></dd>
 
 
 <dt id="arg-since">since<a class="anchor" aria-label="anchor" href="#arg-since"></a></dt>
 <dd><p><a href="https://rdrr.io/r/base/DateTimeClasses.html" class="external-link">POSIXct</a> only the data with timestamps greater than or equal to <code>since</code> will be written</p></dd>
+
+
+<dt id="arg-until">until<a class="anchor" aria-label="anchor" href="#arg-until"></a></dt>
+<dd><p><a href="1">POSIXct</a> date until which to build the stream</p></dd>
 
 
 <dt id="arg-incremental">incremental<a class="anchor" aria-label="anchor" href="#arg-incremental"></a></dt>
