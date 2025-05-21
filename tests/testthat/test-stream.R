@@ -56,6 +56,32 @@ test_that("stream works with mixed POSIXct/Date timestamps", {
   
 })
 
+test_that("stream works with very wide range POSIXct/Date timestamps", {
+  n <- 100000
+  stream_a <- arrow::arrow_table(group_customer_no = sample(seq(n/100),n,replace=T),
+                                 timestamp = sample(seq(as_datetime("1023-01-01"),as_datetime("3023-12-31"),by="day"),
+                                                    n,replace=T),
+                                 feature_a = runif(n)) 
+  stream_b <- arrow::arrow_table(group_customer_no = sample(seq(n/100),n,replace=T),
+                                 timestamp = sample(seq(as.Date("1023-01-01"),as.Date("3023-12-31"),by="day"),
+                                                    n,replace=T),
+                                 feature_b = runif(n),
+                                 pk = sample(seq(n),n)) 
+  
+  read_cache <- mock(stream_a, stream_b)
+  stream_chunk_write <- mock()
+  stub(stream, "read_cache", read_cache)
+  stub(stream, "stream_chunk_write", stream_chunk_write)
+  stub(stream, "sync_cache", NULL)
+  stub(stream, "cache_exists_any", FALSE)
+  
+  suppressMessages(stream(streams = c("stream_a","stream_b"), until = as_datetime("1901-01-01")))
+  
+  expect_length(mock_args(stream_chunk_write),1)
+  #expect_equal(sum(sapply(mock_args(stream_chunk_write),\(.) nrow(.[[1]]))),n*2)
+  
+})
+
 test_that("stream writes out partitioned dataset", {
   n <- 100000
   stream_a <- arrow::arrow_table(group_customer_no = sample(seq(n/100),n,replace=T),

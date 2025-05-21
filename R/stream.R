@@ -76,16 +76,15 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
                     "i" = "loading data"))
     
     # load data from streams
-    stream <- lapply(streams, \(stream) filter(stream, timestamp > as_datetime(stream_max_date) & 
-                                                       timestamp < as_datetime(partition$timestamp)) %>% 
-                       mutate(timestamp_id = arrow:::cast(lubridate::as_datetime(timestamp), 
-                                                          arrow::int64())) %>%
+    stream <- lapply(streams, \(stream) filter(stream, timestamp > stream_max_date & 
+                                                       timestamp < partition$timestamp) %>% 
                        collect %>% setDT %>% 
-                       .[,timestamp := lubridate::as_datetime(timestamp)]) %>%
+                       .[,timestamp := as_datetime(timestamp)] %>% 
+                       .[,timestamp_id := as.numeric(timestamp)]) %>%
       rbindlist(idcol = "stream", fill = T) %>% 
       .[,`:=` (partition = partition$partition)]
     
-    stream_max_date = max(stream$timestamp)
+    stream_max_date = as_datetime(max(stream$timestamp))
 
     if(nrow(stream) == 0) 
       next
