@@ -17,7 +17,7 @@
 #' @importFrom data.table setDT
 #' @importFrom dplyr collect filter transmute
 #' @importFrom tessilake read_cache cache_exists_any write_cache sync_cache
-#' @importFrom checkmate assert_character assert_logical assert_list
+#' @importFrom checkmate assert_character assert_logical assert_list assert_posixct
 #' @importFrom lubridate as_datetime now years
 #' @param ... not used
 #' @param windows 
@@ -42,6 +42,8 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
   assert_character(fill_match,len=1)
   assert_character(window_match,len=1)
   assert_logical(rebuild)
+  assert_posixct(until,len=1)
+  assert_posixct(since,len=1)
   
   # load stream headers
   streams <- lapply(setNames(nm = streams), \(stream) read_cache(stream, "stream", include_partition = T))
@@ -61,10 +63,9 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
   partitions <- lapply(streams, \(stream) 
                        filter(stream, timestamp > stream_max_date &
                                       timestamp < until) %>% 
-                         group_by(partition = floor_date(timestamp,"year")) %>% 
+                         group_by(partition = as_datetime(floor_date(timestamp,"year"))) %>% 
                          summarize %>% 
-                         collect %>% 
-                         mutate(partition = as_datetime(partition))) %>%
+                         collect) %>% 
     rbindlist %>% distinct %>% .[!is.na(partition)]
 
   setkey(partitions,partition)
@@ -78,9 +79,9 @@ stream <- function(streams = c("email_stream","ticket_stream","contribution_stre
     # load data from streams
     stream <- lapply(streams, \(stream) filter(stream, timestamp > stream_max_date & 
                                                        timestamp < partition$timestamp) %>% 
-                       collect %>% setDT %>% 
-                       .[,timestamp := as_datetime(timestamp)] %>% 
-                       .[,timestamp_id := as.numeric(timestamp)]) %>%
+                       mutate(timestamp = as_datetime(timestamp),
+                              timestamp_id = arrow:::cast(timestamp,arrow::int64())) %>%
+                       collect %>% setDT) %>% 
       rbindlist(idcol = "stream", fill = T) %>% 
       .[,`:=` (partition = partition$partition)]
     
