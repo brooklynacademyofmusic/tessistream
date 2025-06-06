@@ -55,27 +55,6 @@ jobs:
           branch: gh-pages
           folder: docs
 
-      - name: Prepare for Sharepoint
-        run: |
-          # rename html to aspx
-          find docs -name *.html -exec mv "{}" "{}.aspx" \;
-          # point links to aspx files
-          find docs -type f -exec perl -i -pe 's%\.html"%.html.aspx"%g' {} \+
-          # change broken github references
-          find docs -type f -exec perl -i -pe 's%https://github.com/skysyzygy%'${PKGDOWN_URL}/${PKGDOWN_DIR}'%g' {} \+
-          find docs -type f -exec perl -i -pe 's%(?<='${PKGDOWN_URL}')([^"]+)(?!=\.html\.aspx)"%\1/index.html.aspx"%g' {} \+
-        shell: bash {0}
-
-      - name: Publish to Sharepoint 💥
-        uses: skysyzygy/action-sharepoint-publish-glob@v1
-        with:
-         site_url: ${{ env.PKGDOWN_URL }}
-         library_folder: ${{ format('{0}/{1}', env.PKGDOWN_DIR, github.event.repository.name) }}
-         sharepoint_username: ${{ secrets.SHAREPOINT_USERNAME }}
-         sharepoint_password: ${{ secrets.SHAREPOINT_PASSWORD }}
-         base: 'docs'
-         glob: 'docs/**'
-
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
         if: ${{ failure() }}
