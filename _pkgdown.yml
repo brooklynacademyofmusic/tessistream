@@ -1,6 +1,8 @@
 template:
   package: dataAtBAM.pkgdown
-
+  
+url: https://brooklynacademyofmusic.github.io/tessistream
+  
 reference:
   - title: Address Stream
     desc: Functions related to geocoding and census data appends for address dataset
@@ -15,6 +17,18 @@ reference:
     desc: Functions related to quering the P2 API, caching tables locally, and preparing a P2 email dataset
   - contents:
     - starts_with("p2_")
+  - title: Membership Stream
+    desc: Functions related to creating membership dataset
+  - contents:
+    - starts_with("membership_")
+  - title: Email Stream
+    desc: Functions related to creating email dataset
+  - contents:
+    - starts_with("email_")
+  - title: Stream
+    desc: Functions related to creating combined stream dataset
+  - contents:
+    - starts_with("stream_")
   - title: Other
     desc: Other things
   - contents:
