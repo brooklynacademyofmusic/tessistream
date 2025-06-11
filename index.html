@@ -36,11 +36,13 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-developer" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Developer</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-developer">
-<li><a class="dropdown-item" href="../dataAtBAM/index.html">data @ BAM</a></li>
-    <li><a class="dropdown-item" href="../tessireport/index.html">tessireport</a></li>
-    <li><a class="dropdown-item" href="../tessistream/index.html">tessistream</a></li>
-    <li><a class="dropdown-item" href="../tessilake/index.html">tessilake</a></li>
-    <li><a class="dropdown-item" href="../tessiflow/index.html">tessiflow</a></li>
+<li><a class="external-link dropdown-item" href="https://salmon-ground-00e98e21e.6.azurestaticapps.net/">data @ BAM</a></li>
+    <li><a class="external-link dropdown-item" href="https://brooklynacademyofmusic.github.io/tessireport/">tessireport</a></li>
+    <li><a class="dropdown-item" href="https://brooklynacademyofmusic.github.io/tessistream/">tessistream</a></li>
+    <li><a class="external-link dropdown-item" href="https://brooklynacademyofmusic.github.io/tessilake/">tessilake</a></li>
+    <li><a class="external-link dropdown-item" href="https://brooklynacademyofmusic.github.io/tessiflow/">tessiflow</a></li>
+    <li><a class="external-link dropdown-item" href="https://brooklynacademyofmusic.github.io/tq/">tq</a></li>
+    <li><a class="external-link dropdown-item" href="https://github.com/brooklynacademyofmusic/tessiverse/">tessiverse</a></li>
   </ul>
 </li>
       </ul>
@@ -61,15 +63,16 @@
 
 <p>Builds timestamped datasets based on contributions, ticket sales, address changes, inventory for historical and predictive analysis.</p>
 <ul>
-<li><p><code>address_stream</code> - customer address cleaning plus appends from US Census and iWave</p></li>
-<li><p><code>benefit_stream</code> - discounting and other benefits</p></li>
-<li><p><code>contribution_stream</code> - donations and other contributions</p></li>
-<li><p><code>email_stream</code> - email sends, opens, and clicks</p></li>
-<li><p><code>inventory_stream</code> - number of tickets available for sale and hold code analysis</p></li>
-<li><p><code>membership_stream</code> - membership starts, ends, and value</p></li>
-<li><p><code>ticket_future_stream</code> - prediction of future ticket purchases based on inventory and past buying</p></li>
-<li><p><code>ticket_stream</code> - ticket purchases including discounting information</p></li>
-<li><p><code>stream</code> - union of <code>address_stream</code>, <code>contribution_stream</code>, <code>email_stream</code>, <code>membership_stream</code>, <code>ticket_future_stream</code>, and <code>ticket_stream</code> for analysis.</p></li>
+<li><p><a href="NA">address_stream</a> - customer address cleaning plus appends from US Census and iWave</p></li>
+<li><p>TODO: <code>benefit_stream</code> - discounting and other benefits</p></li>
+<li><p><a href="NA">contribution_stream</a> - donations and other contributions</p></li>
+<li><p><a href="NA">email_stream</a> - email sends, opens, and clicks</p></li>
+<li><p><a href="NA">p2_stream</a> - email sends, opens, and clicks from the P2 API</p></li>
+<li><p>TODO: <code>inventory_stream</code> - number of tickets available for sale and hold code analysis</p></li>
+<li><p><a href="NA">membership_stream</a> - membership starts, ends, and value</p></li>
+<li><p>TODO: <code>ticket_future_stream</code> - prediction of future ticket purchases based on inventory and past buying</p></li>
+<li><p>TODO: <code>ticket_stream</code> - ticket purchases including discounting information</p></li>
+<li><p><a href="NA">stream</a> - union of the above streams for analysis</p></li>
 </ul>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -77,7 +80,7 @@
 <p>You can install the development version of tessistream from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"skysyzygy/tessistream"</span><span class="op">)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"brooklynacademyofmusic/tessistream"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># to install libpostal, run in the RStudio terminal:</span></span>
 <span><span class="va">scripts</span><span class="op">/</span><span class="va">install_libpostal.sh</span></span></code></pre></div>
@@ -101,7 +104,7 @@
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
 <li><a href="https://github.com/brooklynacademyofmusic/tessistream/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/brooklynacademyofmusic/tessistream/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
-<li><a href="https://app.codecov.io/gh/skysyzygy/tessistream?branch=main" class="external-link"><img src="https://codecov.io/gh/skysyzygy/tessistream/branch/main/graph/badge.svg?token=3R8UJNG6QY" alt="Codecov test coverage"></a></li>
+<li><a href="https://app.codecov.io/gh/brooklynacademyofmusic/tessistream?branch=main" class="external-link"><img src="https://codecov.io/gh/brooklynacademyofmusic/tessistream/branch/main/graph/badge.svg?token=3R8UJNG6QY" alt="Codecov test coverage"></a></li>
 </ul>
 </div>
 
