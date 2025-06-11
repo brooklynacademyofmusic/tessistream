@@ -17,22 +17,23 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/brooklynacademyofmusic/tessistream/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/brooklynacademyofmusic/tessistream/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/skysyzygy/tessistream/branch/main/graph/badge.svg?token=3R8UJNG6QY)](https://app.codecov.io/gh/skysyzygy/tessistream?branch=main)
+[![Codecov test coverage](https://codecov.io/gh/brooklynacademyofmusic/tessistream/branch/main/graph/badge.svg?token=3R8UJNG6QY)](https://app.codecov.io/gh/brooklynacademyofmusic/tessistream?branch=main)
 <!-- badges: end -->
 
 Builds timestamped datasets based on contributions, ticket sales, 
 address changes, inventory for historical and predictive analysis.
 
-* ``address_stream`` - customer address cleaning plus appends from US Census and iWave
-* ``benefit_stream`` - discounting and other benefits 
-* ``contribution_stream`` - donations and other contributions
-* ``email_stream`` - email sends, opens, and clicks
-* ``inventory_stream`` - number of tickets available for sale and hold code analysis
-* ``membership_stream`` - membership starts, ends, and value
-* ``ticket_future_stream`` - prediction of future ticket purchases based on inventory and past buying
-* ``ticket_stream`` - ticket purchases including discounting information
+* [address_stream](`r downlit::autolink_url("address_stream()")`) - customer address cleaning plus appends from US Census and iWave
+* TODO: `benefit_stream` - discounting and other benefits 
+* [contribution_stream](`r downlit::autolink_url("contribution_stream()")`) - donations and other contributions
+* [email_stream](`r downlit::autolink_url("email_stream()")`) - email sends, opens, and clicks
+* [p2_stream](`r downlit::autolink_url("p2_stream()")`) - email sends, opens, and clicks from the P2 API
+* TODO: `inventory_stream` - number of tickets available for sale and hold code analysis
+* [membership_stream](`r downlit::autolink_url("membership_stream()")`) - membership starts, ends, and value
+* TODO: `ticket_future_stream` - prediction of future ticket purchases based on inventory and past buying
+* TODO: `ticket_stream` - ticket purchases including discounting information
 
-* ``stream`` - union of ``address_stream``, ``contribution_stream``, ``email_stream``, ``membership_stream``, ``ticket_future_stream``, and ``ticket_stream`` for analysis.
+* [stream](`r downlit::autolink_url("stream()")`) - union of the above streams for analysis
 
 ## Installation
 
@@ -40,7 +41,7 @@ You can install the development version of tessistream from [GitHub](https://git
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("skysyzygy/tessistream")
+devtools::install_github("brooklynacademyofmusic/tessistream")
 
 # to install libpostal, run in the RStudio terminal:
 scripts/install_libpostal.sh

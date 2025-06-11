@@ -7,34 +7,35 @@
 
 [![R-CMD-check](https://github.com/brooklynacademyofmusic/tessistream/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/brooklynacademyofmusic/tessistream/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
-coverage](https://codecov.io/gh/skysyzygy/tessistream/branch/main/graph/badge.svg?token=3R8UJNG6QY)](https://app.codecov.io/gh/skysyzygy/tessistream?branch=main)
+coverage](https://codecov.io/gh/brooklynacademyofmusic/tessistream/branch/main/graph/badge.svg?token=3R8UJNG6QY)](https://app.codecov.io/gh/brooklynacademyofmusic/tessistream?branch=main)
 <!-- badges: end -->
 
 Builds timestamped datasets based on contributions, ticket sales,
 address changes, inventory for historical and predictive analysis.
 
-- `address_stream` - customer address cleaning plus appends from US
+- [address_stream](NA) - customer address cleaning plus appends from US
   Census and iWave
 
-- `benefit_stream` - discounting and other benefits
+- TODO: `benefit_stream` - discounting and other benefits
 
-- `contribution_stream` - donations and other contributions
+- [contribution_stream](NA) - donations and other contributions
 
-- `email_stream` - email sends, opens, and clicks
+- [email_stream](NA) - email sends, opens, and clicks
 
-- `inventory_stream` - number of tickets available for sale and hold
-  code analysis
+- [p2_stream](NA) - email sends, opens, and clicks from the P2 API
 
-- `membership_stream` - membership starts, ends, and value
+- TODO: `inventory_stream` - number of tickets available for sale and
+  hold code analysis
 
-- `ticket_future_stream` - prediction of future ticket purchases based
-  on inventory and past buying
+- [membership_stream](NA) - membership starts, ends, and value
 
-- `ticket_stream` - ticket purchases including discounting information
+- TODO: `ticket_future_stream` - prediction of future ticket purchases
+  based on inventory and past buying
 
-- `stream` - union of `address_stream`, `contribution_stream`,
-  `email_stream`, `membership_stream`, `ticket_future_stream`, and
-  `ticket_stream` for analysis.
+- TODO: `ticket_stream` - ticket purchases including discounting
+  information
+
+- [stream](NA) - union of the above streams for analysis
 
 ## Installation
 
@@ -43,7 +44,7 @@ You can install the development version of tessistream from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("skysyzygy/tessistream")
+devtools::install_github("brooklynacademyofmusic/tessistream")
 
 # to install libpostal, run in the RStudio terminal:
 scripts/install_libpostal.sh
