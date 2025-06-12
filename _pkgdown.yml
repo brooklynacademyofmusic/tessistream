@@ -13,18 +13,18 @@ reference:
     desc: Functions related to creating contribution dataset
   - contents:
     - starts_with("contribution_")
-  - title: Prospect2
-    desc: Functions related to quering the P2 API, caching tables locally, and preparing a P2 email dataset
-  - contents:
-    - starts_with("p2_")
-  - title: Membership Stream
-    desc: Functions related to creating membership dataset
-  - contents:
-    - starts_with("membership_")
   - title: Email Stream
     desc: Functions related to creating email dataset
   - contents:
     - starts_with("email_")
+  - title: Membership Stream
+    desc: Functions related to creating membership dataset
+  - contents:
+    - starts_with("membership_")
+  - title: Prospect2
+    desc: Functions related to quering the P2 API, caching tables locally, and preparing a P2 email dataset
+  - contents:
+    - starts_with("p2_")
   - title: Stream
     desc: Functions related to creating combined stream dataset
   - contents:
@@ -35,4 +35,8 @@ reference:
     - -starts_with("address_")
     - -starts_with("census_")
     - -starts_with("contribution_")
+    - -starts_with("membership_")
     - -starts_with("p2_")
+    - -starts_with("email_")
+    - -starts_with("stream_")
+    
